@@ -6,7 +6,15 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from main import app, rate_limiter
+from main import (
+    MAX_QA_CONTEXT_CHARS,
+    TOOL_DECLARATIONS,
+    _build_live_config,
+    _build_qa_user_prompt,
+    _normalize_qa_context,
+    app,
+    rate_limiter,
+)
 
 
 @pytest.fixture
@@ -21,6 +29,65 @@ def reset_rate_limiter():
     rate_limiter.requests.clear()
     yield
     rate_limiter.requests.clear()
+
+
+def test_live_config_exposes_actions_only_in_site_mode():
+    qa_config = _build_live_config("qa", "Q&A instructions")
+    site_config = _build_live_config("site", "Site instructions")
+
+    assert qa_config.tools == []
+    assert site_config.tools
+    assert site_config.tools[0].function_declarations == TOOL_DECLARATIONS
+
+
+def test_qa_context_is_bounded_without_rejecting_large_crawls():
+    normalized = _normalize_qa_context("x" * (MAX_QA_CONTEXT_CHARS + 100))
+
+    assert len(normalized) == MAX_QA_CONTEXT_CHARS
+
+
+def test_qa_context_rejects_non_text_payloads():
+    with pytest.raises(ValueError, match="must be text"):
+        _normalize_qa_context({"unexpected": "object"})
+
+
+def test_qa_question_includes_only_relevant_page_context():
+    context = (
+        "Website reference gathered from sitemap; 2 page(s) checked.\n"
+        "### https://example.com/services/\n"
+        "We provide web design, cloud services, and IT consulting.\n"
+        "### https://example.com/\n"
+        "13+ Years Experience in certification and compliance."
+    )
+
+    prompt = _build_qa_user_prompt("How much experience does BizGrow have?", context)
+
+    assert "13+ Years Experience" in prompt
+    assert "We provide web design" not in prompt
+    assert "User question: How much experience does BizGrow have?" in prompt
+
+
+def test_qa_question_includes_relevant_faq_late_on_the_current_page():
+    question = "How is Bizgrow different from a regular compliance consultant?"
+    context = (
+        "Website reference gathered from current page; 1 page(s) checked.\n"
+        "### https://example.com/\n"
+        + ("Homepage introduction and unrelated content. " * 150)
+        + "Frequently Asked Questions. "
+        + question
+        + " BizGrow provides practical support tailored to each company's compliance needs."
+    )
+
+    prompt = _build_qa_user_prompt(question, context)
+
+    assert "BizGrow provides practical support tailored to each company's compliance needs." in prompt
+    assert "Frequently Asked Questions" in prompt
+
+
+def test_qa_question_without_context_is_sent_without_waiting():
+    question = "How much experience does BizGrow have?"
+
+    assert _build_qa_user_prompt(question, "") == question
 
 
 # ========================================

@@ -11,28 +11,36 @@
  * 4. data-testid and data-cy attributes (common test selectors)
  */
 export function findElement(selector: string): Element | null {
+  if (typeof selector !== 'string') return null;
+  const normalizedSelector = selector.trim();
+  if (!normalizedSelector) return null;
+
   // Try direct CSS selector first
-  let el = document.querySelector(selector);
+  let el: Element | null = null;
+  try {
+    el = document.querySelector(normalizedSelector);
+  } catch {
+    // Agent selectors can also be human-readable labels, not valid CSS.
+  }
   if (el) return el;
 
-  // Try aria-label
-  el = document.querySelector(`[aria-label="${selector}"]`);
-  if (el) return el;
-
-  // Try data-testid
-  el = document.querySelector(`[data-testid="${selector}"]`);
-  if (el) return el;
-
-  // Try data-cy
-  el = document.querySelector(`[data-cy="${selector}"]`);
-  if (el) return el;
+  // Compare attributes directly so quotes or CSS punctuation in labels are safe.
+  for (const candidate of document.querySelectorAll('[aria-label], [data-testid], [data-cy]')) {
+    if (
+      candidate.getAttribute('aria-label') === normalizedSelector
+      || candidate.getAttribute('data-testid') === normalizedSelector
+      || candidate.getAttribute('data-cy') === normalizedSelector
+    ) {
+      return candidate;
+    }
+  }
 
   // Text content search (buttons, links, labels, inputs)
   const candidates = document.querySelectorAll(
     'a, button, [role="button"], label, input, [role="link"]'
   );
   for (const c of candidates) {
-    if (c.textContent?.trim().toLowerCase().includes(selector.toLowerCase())) {
+    if (c.textContent?.trim().toLowerCase().includes(normalizedSelector.toLowerCase())) {
       return c;
     }
   }
@@ -50,6 +58,11 @@ export function findElementWithRetry(
   delayMs: number = 100
 ): Promise<Element | null> {
   return new Promise((resolve) => {
+    if (typeof selector !== 'string' || !selector.trim()) {
+      resolve(null);
+      return;
+    }
+
     let attempts = 0;
 
     const tryFind = () => {

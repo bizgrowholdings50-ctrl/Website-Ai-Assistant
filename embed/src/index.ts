@@ -10,13 +10,14 @@
  *   </script>
  */
 
-import { GatewayClient, PageLocation } from './gateway-client';
+import { AgentMode, GatewayClient, PageLocation } from './gateway-client';
 import { AudioHandler } from './audio';
 import { Avatar, AvatarState } from './avatar';
 import { executeAction } from './dom-actions';
 import { captureSnapshot } from './dom-snapshot';
 import { animateToElement, cleanupVisualizerElements } from './action-visualizer';
 import { captureScreenshot } from './screenshot';
+import { collectCurrentPageKnowledge, collectSiteKnowledge } from './site-knowledge';
 
 // ========================================
 // Configuration
@@ -29,6 +30,19 @@ interface WebClawConfig {
   theme?: 'light' | 'dark';
   avatarColor?: string;
   seamless?: boolean;
+}
+
+interface PersistedChatMessage {
+  role: 'user' | 'agent';
+  text: string;
+  timestamp: string;
+}
+
+interface PersistedConversation {
+  version: 1;
+  sessionId: string;
+  isOpen: boolean;
+  messages: PersistedChatMessage[];
 }
 
 function getConfig(): WebClawConfig {
@@ -603,27 +617,42 @@ class WebClawEmbed {
   private config: WebClawConfig;
   private gateway: GatewayClient;
   private audio: AudioHandler;
+  private readonly conversationStorageKey: string;
+  private readonly welcomeShownStorageKey: string;
+  private conversationMessages: PersistedChatMessage[] = [];
   private shadow!: ShadowRoot;
   private panel!: HTMLElement;
   private messagesEl!: HTMLElement;
+  private streamingAssistantMessage: PersistedChatMessage | null = null;
+  private streamingAssistantElement: HTMLElement | null = null;
+  private assistantWordQueue: string[] = [];
+  private assistantRevealTimer: number | null = null;
   private statusDot!: HTMLElement;
   private avatar: Avatar | null = null;
   private isOpen = false;
   private typingIndicator: HTMLElement | null = null;
   private connectionState: 'connected' | 'connecting' | 'disconnected' = 'disconnected';
-  private currentAgent: 'site' | 'personal' = 'site';
+  private currentAgent: AgentMode = 'site';
+  private qaSiteContext = '';
+  private modeSwitchRequest = 0;
+  private modeSwitchingTo: AgentMode | null = null;
   private voiceBarEl: HTMLElement | null = null;
   private welcomeMessage: string = '';
   private readonly brandName = 'BizGrow Holdings';
-  private lastTextTime: number = 0;
+  private directTextReceivedThisTurn = false;
   private activePageLocation: PageLocation = this.getPageLocation(null);
+  private latestUserRequest = '';
 
   constructor(config: WebClawConfig) {
     this.config = config;
-    this.gateway = new GatewayClient(config.gatewayUrl, config.siteId);
+    this.conversationStorageKey = `webclaw:${config.siteId}:${window.location.origin}:conversation`;
+    this.welcomeShownStorageKey = `${this.conversationStorageKey}:welcome-shown`;
+    const conversation = this.readConversation();
+    this.gateway = new GatewayClient(config.gatewayUrl, config.siteId, conversation?.sessionId);
     this.audio = new AudioHandler({ seamless: config.seamless ?? true });
 
     this.createUI();
+    this.restoreConversation(conversation);
     this.startContextTracking();
     this.bindGatewayEvents();
     this.bindAudioEvents();
@@ -652,7 +681,7 @@ class WebClawEmbed {
     const updateLocation = (): void => {
       const viewportCenter = window.innerHeight * 0.45;
       const candidates = document.querySelectorAll<HTMLElement>(
-        'main[id], section, article, .section[id], .features-section[id], [data-context-section]'
+        'main, section, article, .page-wrap, .detail-layout, .section[id], .features-section[id], [data-context-section]'
       );
       let activeSection: HTMLElement | null = null;
       let bestDistance = Number.POSITIVE_INFINITY;
@@ -721,13 +750,25 @@ class WebClawEmbed {
     if (headerTitle) headerTitle.textContent = this.brandName;
 
     // 3. Show welcome message as HTML popup bubble near the chathead
-    if (this.welcomeMessage) {
+    let shouldShowWelcome = true;
+    try {
+      shouldShowWelcome = sessionStorage.getItem(this.welcomeShownStorageKey) !== 'true';
+    } catch (error) {
+      console.warn('[WebClaw] Could not read welcome visibility state:', error);
+    }
+
+    if (this.welcomeMessage && shouldShowWelcome) {
       const bubble = this.shadow.querySelector('#wc-welcome-bubble');
       const bubbleName = this.shadow.querySelector('#wc-welcome-bubble .bubble-name');
       const bubbleText = this.shadow.querySelector('#wc-welcome-bubble .bubble-text');
       if (bubble && bubbleName && bubbleText) {
         bubbleName.textContent = this.brandName;
         bubbleText.textContent = this.welcomeMessage;
+        try {
+          sessionStorage.setItem(this.welcomeShownStorageKey, 'true');
+        } catch (error) {
+          console.warn('[WebClaw] Could not save welcome visibility state:', error);
+        }
         // Short delay so the user sees the avatar appear first, then the bubble pops
         setTimeout(() => {
           bubble.classList.add('visible');
@@ -781,7 +822,7 @@ class WebClawEmbed {
           </div>
           <div class="webclaw-agent-switch">
             <button class="webclaw-agent-pill active" data-agent="site">Site</button>
-            <button class="webclaw-agent-pill" data-agent="personal">BizGrow Holdings</button>
+            <button class="webclaw-agent-pill" data-agent="qa">Q&amp;A</button>
           </div>
           <button class="webclaw-btn-close" aria-label="Close BizGrow Holdings chat panel" title="Close">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -861,8 +902,8 @@ class WebClawEmbed {
     // Agent switch pills
     container.querySelectorAll('.webclaw-agent-pill').forEach((pill: Element) => {
       pill.addEventListener('click', () => {
-        const agent = (pill as HTMLElement).dataset.agent as 'site' | 'personal';
-        this.switchAgent(agent);
+        const agent = (pill as HTMLElement).dataset.agent;
+        if (agent === 'site' || agent === 'qa') this.switchAgent(agent);
       });
     });
   }
@@ -880,6 +921,7 @@ class WebClawEmbed {
     this.audio.on('speechStart', () => {
       // Barge-in: stop playback when user starts speaking
       this.audio.stopPlayback();
+      this.directTextReceivedThisTurn = false;
     });
 
     this.audio.on('amplitude', (amplitude) => {
@@ -893,10 +935,13 @@ class WebClawEmbed {
       this.setStatus('Connected');
       this.avatar?.setState('idle');
       this.removeTypingIndicator();
-      const snapshot = captureSnapshot();
-      this.gateway.sendDomSnapshot(snapshot, window.location.href);
-
-      this.sendScreenshotToGateway();
+      if (this.currentAgent === 'site') {
+        const snapshot = captureSnapshot();
+        this.gateway.sendDomSnapshot(snapshot, window.location.href);
+        this.sendScreenshotToGateway();
+      } else {
+        this.gateway.sendQaSiteContext(this.qaSiteContext);
+      }
 
       // Start seamless voice on connect
       if (this.config.seamless) {
@@ -915,8 +960,8 @@ class WebClawEmbed {
       this.removeTypingIndicator();
       const text = msg.text as string;
       if (text) {
-        this.addMessage('agent', text);
-        this.lastTextTime = Date.now();
+        this.directTextReceivedThisTurn = true;
+        this.appendAssistantText(text);
       }
       this.avatar?.setState('speaking');
       setTimeout(() => this.avatar?.setState(
@@ -953,27 +998,37 @@ class WebClawEmbed {
       if (selector) {
         const fab = this.shadow.querySelector('.webclaw-fab');
         if (fab) {
-          await animateToElement(
+          void animateToElement(
             fab.getBoundingClientRect(),
             selector,
             { color: this.config.avatarColor },
-          );
+          ).catch((error: unknown) => {
+            console.warn('[WebClaw] Action animation failed:', error);
+          });
         }
       }
 
       try {
+        if (actionName === 'navigate' || actionName === 'navigate_to') {
+          await this.audio.waitForPlaybackToFinish();
+        }
         const result = await executeAction({
           action: actionName,
           id: callId,
           ...args,
+          description: args.description || '',
+          target_hint: this.latestUserRequest,
+          user_request: this.latestUserRequest,
         });
         // Send result back with call_id so gateway can match it to the pending Future
         this.gateway.sendActionResult(callId, result);
-        this.addMessage('agent', `⚡ ${result.message || actionName}`);
+        if (result.status === 'error') {
+          console.warn(`[WebClaw] Action "${actionName}" failed; returning the result to the agent for recovery:`, result.message);
+        }
       } catch (e: any) {
         // Send error back too so the Future resolves
         this.gateway.sendActionResult(callId, { action_id: callId, status: 'error', message: e.message });
-        this.addMessage('agent', `⚡ Action error: ${e.message}`);
+        console.error(`[WebClaw] Action "${actionName}" failed unexpectedly:`, e);
       }
       this.removeTypingIndicator();
       setTimeout(() => this.avatar?.setState(
@@ -981,13 +1036,24 @@ class WebClawEmbed {
       ), 1000);
     });
 
-    // Handle transcription (agent's spoken words transcribed to text)
-    // Only show if no direct text event was received in the last 2 seconds
-    // (prevents duplicate messages when both model_turn text and transcription arrive)
+    // Use speech transcription only when this turn did not provide direct text.
+    this.gateway.on('input_transcription', (msg) => {
+      const text = (msg.text as string | undefined)?.trim();
+      if (text) this.latestUserRequest = text;
+    });
+
     this.gateway.on('transcription', (msg) => {
-      if (msg.text && (Date.now() - this.lastTextTime > 2000)) {
-        this.addMessage('agent', msg.text as string);
+      if (msg.text && !this.directTextReceivedThisTurn) {
+        this.removeTypingIndicator();
+        this.appendAssistantText(msg.text as string);
       }
+    });
+
+    this.gateway.on('turn_complete', () => {
+      this.removeTypingIndicator();
+      this.flushAssistantWordQueue();
+      this.streamingAssistantMessage = null;
+      this.streamingAssistantElement = null;
     });
 
     // Handle gateway/ADK errors
@@ -1014,24 +1080,69 @@ class WebClawEmbed {
     }
   }
 
-  private switchAgent(agent: 'site' | 'personal'): void {
+  private async switchAgent(agent: AgentMode): Promise<void> {
+    if (this.modeSwitchingTo === agent) return;
+    if (this.currentAgent === agent) {
+      if (this.modeSwitchingTo === null) return;
+      this.modeSwitchRequest++;
+      this.modeSwitchingTo = null;
+      this.setStatus('Connected');
+      return;
+    }
+    const requestId = ++this.modeSwitchRequest;
+    this.modeSwitchingTo = agent;
     this.currentAgent = agent;
+    this.updateAgentPills(agent);
 
-    // Update pills
+    if (agent === 'qa') {
+      try {
+        this.qaSiteContext = collectCurrentPageKnowledge();
+      } catch (error) {
+        console.error('[WebClaw] Could not read the current page for Q&A:', error);
+        this.qaSiteContext = '';
+      }
+
+      void collectSiteKnowledge().then(context => {
+        if (requestId !== this.modeSwitchRequest || this.currentAgent !== 'qa') return;
+        this.qaSiteContext = context;
+        if (this.connectionState === 'connected') {
+          this.gateway.sendQaSiteContext(context);
+        }
+      }).catch(error => {
+        console.error('[WebClaw] Could not prepare website context for Q&A:', error);
+        if (requestId !== this.modeSwitchRequest || this.currentAgent !== 'qa') return;
+      });
+    }
+
+    this.setStatus('Switching mode...');
+    try {
+      await this.gateway.setAgentMode(agent);
+      if (requestId !== this.modeSwitchRequest) return;
+      this.addMessage('agent', `Switched to ${agent === 'qa' ? 'Q&A mode' : 'Site mode'}.`);
+    } catch (error) {
+      console.error('[WebClaw] Could not switch agent mode:', error);
+      this.setStatus('Connection issue');
+    } finally {
+      if (requestId === this.modeSwitchRequest) this.modeSwitchingTo = null;
+    }
+  }
+
+  private updateAgentPills(agent: AgentMode): void {
     this.shadow.querySelectorAll('.webclaw-agent-pill').forEach((pill: Element) => {
       const el = pill as HTMLElement;
       el.classList.toggle('active', el.dataset.agent === agent);
     });
-
-    // Notify gateway
-    this.gateway.sendText(`[SYSTEM: Switched to ${agent} agent]`);
-    this.addMessage('agent', `Switched to ${agent === 'personal' ? 'your personal agent' : 'the site agent'}.`);
   }
 
   private checkVoiceSwitchCommand(text: string): void {
     const lower = text.toLowerCase();
-    if (lower.includes('switching to your personal') || lower.includes('switching to my claw')) {
-      this.switchAgent('personal');
+    if (
+      lower.includes('switching to your personal')
+      || lower.includes('switching to my claw')
+      || lower.includes('switching to q&a')
+      || lower.includes('switching to qa')
+    ) {
+      this.switchAgent('qa');
     } else if (lower.includes('switching to site') || lower.includes('switching back')) {
       this.switchAgent('site');
     }
@@ -1040,6 +1151,7 @@ class WebClawEmbed {
   private async toggle(): Promise<void> {
     this.isOpen = !this.isOpen;
     this.panel.classList.toggle('open', this.isOpen);
+    this.persistConversation();
 
     // If panel opened and we're disconnected, try to reconnect
     if (this.isOpen && this.connectionState === 'disconnected') {
@@ -1067,13 +1179,27 @@ class WebClawEmbed {
     this.panel.classList.remove('open');
     this.removeTypingIndicator();
     cleanupVisualizerElements();
+    this.persistConversation();
   }
 
   private sendText(text: string): void {
+    this.flushAssistantWordQueue();
+    this.streamingAssistantMessage = null;
+    this.streamingAssistantElement = null;
+    this.directTextReceivedThisTurn = false;
+    this.latestUserRequest = text;
+
     // Check for switch commands
     const lower = text.toLowerCase();
-    if (lower.includes('switch to my') || lower.includes('my agent') || lower.includes('use my claw')) {
-      this.switchAgent('personal');
+    if (
+      lower.includes('switch to my')
+      || lower.includes('my agent')
+      || lower.includes('use my claw')
+      || lower.includes('switch to q&a')
+      || lower.includes('switch to qa')
+      || lower.includes('qa mode')
+    ) {
+      this.switchAgent('qa');
       return;
     }
     if (lower.includes('switch to site') || lower.includes('site agent')) {
@@ -1082,27 +1208,218 @@ class WebClawEmbed {
     }
 
     this.addMessage('user', text);
-    this.gateway.sendText(text, this.activePageLocation);
+    this.showTypingIndicator();
+    this.gateway.sendText(
+      text,
+      this.activePageLocation,
+      this.currentAgent === 'qa' ? this.qaSiteContext : '',
+    );
   }
 
-  private addMessage(role: 'user' | 'agent', text: string): void {
+  private addMessage(role: 'user' | 'agent', text: string, timestamp = new Date()): void {
+    this.flushAssistantWordQueue();
+    this.streamingAssistantMessage = null;
+    this.streamingAssistantElement = null;
+
+    const persistedMessage: PersistedChatMessage = {
+      role,
+      text,
+      timestamp: timestamp.toISOString(),
+    };
+    this.conversationMessages.push(persistedMessage);
+    if (this.conversationMessages.length > 100) {
+      this.conversationMessages = this.conversationMessages.slice(-100);
+      this.messagesEl.firstElementChild?.remove();
+    }
+
+    this.renderMessage(persistedMessage);
+    this.persistConversation();
+  }
+
+  private appendAssistantText(text: string): void {
+    let chunk = text.replace(/\s+/g, ' ').trim();
+    if (!chunk.trim()) return;
+
+    const accumulatedText = [
+      this.streamingAssistantMessage?.text || '',
+      this.assistantWordQueue.join(' '),
+    ].filter(Boolean).join(' ');
+    if (accumulatedText) {
+      const normalizeToken = (token: string): string => token.toLowerCase().replace(/[^\w]/g, '');
+      const accumulatedTokens = accumulatedText.split(/\s+/)
+        .filter(token => normalizeToken(token));
+      const incomingTokens = chunk.split(/\s+/).filter(token => normalizeToken(token));
+      const incomingNormalized = incomingTokens.map(normalizeToken);
+
+      const alreadyDisplayed = incomingNormalized.length >= 4
+        && accumulatedTokens.some((_, start) =>
+          incomingNormalized.every((token, offset) => accumulatedTokens[start + offset] === token)
+        );
+      if (alreadyDisplayed) return;
+
+      let overlap = Math.min(accumulatedTokens.length, incomingNormalized.length);
+      while (overlap > 0) {
+        const suffix = accumulatedTokens.slice(-overlap);
+        if (suffix.every((token, index) => token === incomingNormalized[index])) break;
+        overlap--;
+      }
+      if (overlap >= 4) {
+        chunk = incomingTokens.slice(overlap).join(' ');
+        if (!chunk) return;
+      }
+    }
+
+    if (!this.streamingAssistantMessage || !this.streamingAssistantElement) {
+      this.removeTypingIndicator();
+      const message: PersistedChatMessage = {
+        role: 'agent',
+        text: '',
+        timestamp: new Date().toISOString(),
+      };
+      const wrapper = document.createElement('div');
+      wrapper.className = 'webclaw-msg-wrapper';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'webclaw-msg agent';
+      bubble.textContent = message.text;
+
+      const timestamp = document.createElement('div');
+      timestamp.className = 'webclaw-msg-timestamp';
+      timestamp.textContent = new Date(message.timestamp).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      wrapper.append(bubble, timestamp);
+      this.messagesEl.appendChild(wrapper);
+      this.conversationMessages.push(message);
+      this.streamingAssistantMessage = message;
+      this.streamingAssistantElement = bubble;
+    }
+
+    this.assistantWordQueue.push(...chunk.split(' '));
+    this.revealNextAssistantWord();
+  }
+
+  private revealNextAssistantWord(scheduleNext = true): void {
+    if (
+      this.assistantRevealTimer !== null
+      || !this.streamingAssistantMessage
+      || !this.streamingAssistantElement
+      || this.assistantWordQueue.length === 0
+    ) return;
+
+    const word = this.assistantWordQueue.shift()!;
+    const previousText = this.streamingAssistantMessage.text.trimEnd();
+    const needsSpace = previousText.length > 0 && !/^[,.;:!?)]/.test(word);
+    this.streamingAssistantMessage.text = previousText + (needsSpace ? ' ' : '') + word;
+    this.streamingAssistantElement.textContent = this.streamingAssistantMessage.text;
+    if (this.conversationMessages.length > 100) {
+      this.conversationMessages = this.conversationMessages.slice(-100);
+      this.messagesEl.firstElementChild?.remove();
+    }
+    this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+    this.persistConversation();
+
+    if (scheduleNext && this.assistantWordQueue.length > 0) {
+      this.assistantRevealTimer = window.setTimeout(() => {
+        this.assistantRevealTimer = null;
+        this.revealNextAssistantWord();
+      }, 75);
+    }
+  }
+
+  private flushAssistantWordQueue(): void {
+    if (this.assistantRevealTimer !== null) {
+      window.clearTimeout(this.assistantRevealTimer);
+      this.assistantRevealTimer = null;
+    }
+    while (this.assistantWordQueue.length > 0) {
+      this.revealNextAssistantWord(false);
+    }
+  }
+
+  private renderMessage(message: PersistedChatMessage): void {
     const wrapper = document.createElement('div');
     wrapper.className = 'webclaw-msg-wrapper';
-    if (role === 'user') wrapper.classList.add('user');
+    if (message.role === 'user') wrapper.classList.add('user');
 
     const msg = document.createElement('div');
-    msg.className = `webclaw-msg ${role}`;
-    msg.textContent = text;
+    msg.className = `webclaw-msg ${message.role}`;
+    msg.textContent = message.text;
 
     const timestamp = document.createElement('div');
     timestamp.className = 'webclaw-msg-timestamp';
-    const now = new Date();
-    timestamp.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const sentAt = new Date(message.timestamp);
+    timestamp.textContent = sentAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     wrapper.appendChild(msg);
     wrapper.appendChild(timestamp);
     this.messagesEl.appendChild(wrapper);
     this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+  }
+
+  private readConversation(): PersistedConversation | null {
+    try {
+      const saved = sessionStorage.getItem(this.conversationStorageKey);
+      if (!saved) return null;
+      const parsed: unknown = JSON.parse(saved);
+      if (
+        !parsed
+        || typeof parsed !== 'object'
+        || !('version' in parsed)
+        || parsed.version !== 1
+        || !('sessionId' in parsed)
+        || typeof parsed.sessionId !== 'string'
+        || !('isOpen' in parsed)
+        || typeof parsed.isOpen !== 'boolean'
+        || !('messages' in parsed)
+        || !Array.isArray(parsed.messages)
+      ) {
+        throw new Error('Saved chat state has an invalid shape.');
+      }
+      const messages = parsed.messages.filter((message): message is PersistedChatMessage =>
+        !!message
+        && typeof message === 'object'
+        && 'role' in message
+        && (message.role === 'user' || message.role === 'agent')
+        && 'text' in message
+        && typeof message.text === 'string'
+        && 'timestamp' in message
+        && typeof message.timestamp === 'string'
+        && !Number.isNaN(Date.parse(message.timestamp))
+      ).slice(-100);
+      return {
+        version: 1,
+        sessionId: parsed.sessionId,
+        isOpen: parsed.isOpen,
+        messages,
+      };
+    } catch (error) {
+      console.warn('[WebClaw] Could not restore chat state for this tab:', error);
+      return null;
+    }
+  }
+
+  private restoreConversation(conversation: PersistedConversation | null): void {
+    if (!conversation) return;
+    this.conversationMessages = conversation.messages;
+    this.conversationMessages.forEach(message => this.renderMessage(message));
+    this.isOpen = conversation.isOpen;
+    this.panel.classList.toggle('open', this.isOpen);
+  }
+
+  private persistConversation(): void {
+    try {
+      sessionStorage.setItem(this.conversationStorageKey, JSON.stringify({
+        version: 1,
+        sessionId: this.gateway.getSessionId(),
+        isOpen: this.isOpen,
+        messages: this.conversationMessages,
+      } satisfies PersistedConversation));
+    } catch (error) {
+      console.warn('[WebClaw] Could not save chat state for this tab:', error);
+    }
   }
 
   private showTypingIndicator(): void {

@@ -3,6 +3,7 @@
 import logging
 import re
 from typing import Any
+from urllib.parse import urlsplit
 
 logger = logging.getLogger(__name__)
 
@@ -24,14 +25,17 @@ def _validate_selector(selector: str) -> None:
 
 
 def _validate_url(url: str) -> None:
-    """Validate URL - only allow http/https."""
+    """Validate HTTP(S) URLs and relative paths for in-site navigation."""
     if not url or len(url) > 2000:
         raise ValueError("url must be 1-2000 characters")
-    if not (url.startswith('http://') or url.startswith('https://')):
-        raise ValueError("url must start with http:// or https://")
-    # Prevent javascript: URIs
-    if 'javascript:' in url.lower() or 'data:' in url.lower():
-        raise ValueError("url protocol not allowed")
+    parsed = urlsplit(url)
+    if parsed.scheme:
+        if parsed.scheme.lower() not in ("http", "https") or not parsed.netloc:
+            raise ValueError("url protocol not allowed")
+    elif parsed.netloc or url.startswith("//"):
+        raise ValueError("protocol-relative URLs are not allowed")
+    if "\\" in url or any(ord(char) < 32 for char in url):
+        raise ValueError("url contains invalid characters")
 
 
 def click_element(selector: str, description: str = "") -> dict[str, Any]:
@@ -86,13 +90,19 @@ def type_text(selector: str, text: str, clear_first: bool = True) -> dict[str, A
         raise
 
 
-def scroll_to(selector: str = "", direction: str = "down", amount: int = 300) -> dict[str, Any]:
+def scroll_to(
+    selector: str = "",
+    direction: str = "down",
+    amount: int = 300,
+    description: str = "",
+) -> dict[str, Any]:
     """Scroll the page or scroll to a specific element.
 
     Args:
-        selector: CSS selector to scroll to. If empty, scrolls the page by amount.
+        selector: CSS selector or visible text to scroll to. If empty, scrolls the page by amount.
         direction: Scroll direction - 'up' or 'down'. Only used when selector is empty.
         amount: Pixels to scroll. Only used when selector is empty.
+        description: Human-readable description of the target, used if the selector is stale.
 
     Returns:
         dict: Action result with status and details.
@@ -100,6 +110,8 @@ def scroll_to(selector: str = "", direction: str = "down", amount: int = 300) ->
     try:
         if selector:
             _validate_selector(selector)
+        if len(description) > 500:
+            description = description[:500]
         if direction not in ("up", "down"):
             raise ValueError("direction must be 'up' or 'down'")
         if not isinstance(amount, int) or amount < 0 or amount > 10000:
@@ -109,6 +121,7 @@ def scroll_to(selector: str = "", direction: str = "down", amount: int = 300) ->
             "selector": selector,
             "direction": direction,
             "amount": amount,
+            "description": description,
             "status": "pending",
         }
     except ValueError as e:
@@ -186,20 +199,24 @@ def highlight_element(selector: str, message: str = "") -> dict[str, Any]:
         raise
 
 
-def read_page(selector: str = "body") -> dict[str, Any]:
+def read_page(selector: str = "body", description: str = "") -> dict[str, Any]:
     """Read and extract text content from the page or a specific element.
 
     Args:
-        selector: CSS selector of the element to read. Defaults to body (full page).
+        selector: CSS selector or visible section text to read. Defaults to body (full page).
+        description: Human-readable content requested, used when the selector is missing or stale.
 
     Returns:
         dict: Action result with the extracted content.
     """
     try:
         _validate_selector(selector)
+        if len(description) > 500:
+            description = description[:500]
         return {
             "action": "read",
             "selector": selector,
+            "description": description,
             "status": "pending",
         }
     except ValueError as e:
@@ -232,12 +249,17 @@ def select_option(selector: str, value: str) -> dict[str, Any]:
         raise
 
 
-def check_checkbox(selector: str, checked: bool = True) -> dict[str, Any]:
+def check_checkbox(
+    selector: str,
+    checked: bool = True,
+    description: str = "",
+) -> dict[str, Any]:
     """Check or uncheck a checkbox element.
 
     Args:
-        selector: CSS selector of the checkbox element.
+        selector: Stable CSS selector or accessible label of the checkbox.
         checked: Whether to check (True) or uncheck (False) the checkbox.
+        description: Exact visible label for resolving the checkbox when the selector is stale.
 
     Returns:
         dict: Action result with status and details.
@@ -246,10 +268,13 @@ def check_checkbox(selector: str, checked: bool = True) -> dict[str, Any]:
         _validate_selector(selector)
         if not isinstance(checked, bool):
             raise ValueError("checked must be boolean")
+        if len(description) > 500:
+            description = description[:500]
         return {
             "action": "check",
             "selector": selector,
             "checked": checked,
+            "description": description,
             "status": "pending",
         }
     except ValueError as e:

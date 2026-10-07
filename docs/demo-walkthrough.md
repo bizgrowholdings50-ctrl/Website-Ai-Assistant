@@ -13,7 +13,7 @@ This guide walks you through the TechByte demo e-commerce site included with Web
 
 Navigate to [http://localhost:8081/demo/](http://localhost:8081/demo/) in your browser.
 
-You will see the TechByte Store: a mock electronics shop with product cards, a FAQ section, and a contact form. In the bottom-right corner, the WebClaw avatar appears as an animated circle.
+You will see the TechByte Store: a mock electronics shop with a home page, product catalog, product detail pages, a persistent cart, and a demo checkout. The FAQ and contact form are on the home page. In the bottom-right corner, the WebClaw avatar appears as an animated circle.
 
 ## The Demo Site
 
@@ -21,25 +21,27 @@ You will see the TechByte Store: a mock electronics shop with product cards, a F
 
 The TechByte Store includes:
 
-| Section | Content | WebClaw Interaction |
+| Page/section | Content | WebClaw Interaction |
 |:--------|:--------|:--------------------|
-| **Header** | Store name, navigation links | Agent can click nav links |
-| **Hero** | Welcome message, shop button | Agent can click "Shop Now" |
-| **Products** | 6 product cards with "Add to Cart" | Agent can click products, read details |
+| **Header** | Store name, product links, cart counter | Agent can navigate between pages |
+| **Home** | Welcome message, featured products, FAQ, contact form | Agent can answer questions and fill the form |
+| **Catalog** | 6 product cards with detail links and "Add to cart" | Agent can compare products and add items |
+| **Product detail** | Product description, features, price, add button | Agent can read specifications and add an item |
+| **Cart** | Persistent items, quantity controls, shipping and totals | Agent can update quantities and remove items |
+| **Checkout** | Demo delivery form and order summary | Agent can place a simulated order; no payment is collected |
 | **FAQ** | 4 expandable accordion items | Agent can click to expand, read answers |
 | **Contact** | Form with name, email, subject, message | Agent can fill fields, select subject |
-| **Cart** | Floating cart counter | Updates when agent adds items |
 
 ### Product Catalog
 
 | Product | Price | Category |
 |:--------|:------|:---------|
-| Wireless Headphones Pro | $89.99 | Audio |
-| Smart Watch Ultra | $299.99 | Wearables |
-| Portable Speaker Max | $149.99 | Audio |
-| USB-C Hub 7-in-1 | $49.99 | Accessories |
-| Mechanical Keyboard RGB | $129.99 | Input |
-| Webcam 4K HDR | $79.99 | Video |
+| ProSound Wireless Headphones | $79.99 | Audio |
+| MechKey Pro Keyboard | $129.99 | Input |
+| SwiftClick Gaming Mouse | $49.99 | Input |
+| PowerBank Ultra 20K | $39.99 | Power |
+| ClearVoice USB Microphone | $89.99 | Audio |
+| SmartGlow LED Strip 5m | $24.99 | Lighting |
 
 ### Knowledge Base
 
@@ -69,9 +71,9 @@ The demo site is pre-configured with this knowledge base (from `context/broker.p
 
 ### Test 4: Click Action
 
-**Type:** "Click the first product's Add to Cart button"
+**Type:** "Add the ProSound Wireless Headphones to my cart"
 
-**Expected:** The agent clicks the "Add to Cart" button on the Wireless Headphones Pro card. The cart counter updates.
+**Expected:** The agent clicks the headphones' "Add to cart" button. The cart counter updates and the item remains in the cart when navigating to another page.
 
 ### Test 5: Form Interaction
 
@@ -87,33 +89,42 @@ The demo site is pre-configured with this knowledge base (from `context/broker.p
 
 ### Test 7: Navigation
 
-**Type:** "Go to the top of the page"
+**Type:** "Open the product catalog and show me the keyboard"
 
-**Expected:** The agent scrolls to the top of the page.
+**Expected:** The agent opens the catalog and can follow the MechKey Pro Keyboard link to its product detail page.
 
 ### Test 8: Multi-Step Task
 
-**Type:** "Help me buy the USB-C Hub"
+**Type:** "Help me buy the SwiftClick Gaming Mouse"
 
 **Expected:** The agent:
-1. Scrolls to the products section
-2. Finds the USB-C Hub card
-3. Clicks "Add to Cart"
-4. Confirms the action
+1. Opens the product catalog
+2. Finds the SwiftClick Gaming Mouse and opens its details
+3. Adds it to the cart
+4. Opens the cart and confirms quantity and price
 
-### Test 9: FAQ Accordion
+### Test 9: Cart and Checkout
 
-**Type:** "What are the shipping options?"
+1. Add products totaling less than $50 and open the cart.
+2. Increase the quantity and confirm the subtotal and $5.99 standard shipping update.
+3. Add enough items to exceed $50 and confirm standard shipping becomes free.
+4. Continue to checkout, select Express, and place a demo order.
 
-**Expected:** The agent either answers from the knowledge base or clicks the relevant FAQ accordion item to expand it and reads the answer.
+**Expected:** The order confirmation appears, the cart counter resets to zero, and no payment is collected.
 
-### Test 10: Voice Interaction
+### Test 10: FAQ Accordion
+
+**Type:** "What is the return policy?"
+
+**Expected:** The agent answers from the knowledge base or opens the FAQ on the home page to read the answer.
+
+### Test 11: Voice Interaction
 
 1. Click the **microphone icon** in the WebClaw overlay
 2. Say: "What's the most expensive product you have?"
 3. Listen for the agent's voice response
 
-**Expected:** You hear the agent say something like "The most expensive product is the Smart Watch Ultra at $299.99."
+**Expected:** You hear the agent say something like "The most expensive product is the MechKey Pro Keyboard at $129.99."
 
 ## Observing Agent Behavior
 
@@ -142,7 +153,7 @@ Open DevTools (F12) → Console to see:
 [WebClaw] Connected to gateway ws://localhost:8081/ws/demo/...
 [WebClaw] Sent DOM snapshot (2341 chars)
 [WebClaw] Received audio chunk (15360 bytes)
-[WebClaw] Executing action: click #add-to-cart
+[WebClaw] Executing action: click .btn-add
 [WebClaw] Action result: {success: true, element: "button"}
 ```
 
@@ -158,7 +169,7 @@ curl -X PUT http://localhost:8081/api/sites/demo \
     "persona_name": "TechBot",
     "persona_voice": "enthusiastic, tech-savvy, uses product names",
     "welcome_message": "Welcome to TechByte! I know everything about our products. Try me!",
-    "knowledge_base": "Premium electronics store. Best sellers: Smart Watch Ultra ($299.99) and Wireless Headphones Pro ($89.99). We price-match Amazon. Student discount: 15% off with .edu email. Free express shipping on orders over $100.",
+    "knowledge_base": "Premium electronics store. Products include ProSound Wireless Headphones ($79.99), MechKey Pro Keyboard ($129.99), SwiftClick Gaming Mouse ($49.99), PowerBank Ultra 20K ($39.99), ClearVoice USB Microphone ($89.99), and SmartGlow LED Strip 5m ($24.99). Free standard shipping on orders over $50, $5.99 below $50, and express shipping is $9.99. Returns accepted within 30 days.",
     "allowed_actions": ["click", "type", "scroll", "scroll_to_top", "scroll_to_bottom", "navigate", "highlight", "read", "select", "check"]
   }'
 ```

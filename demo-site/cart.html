@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your Cart - TechByte Store</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="shop.css">
+</head>
+<body>
+  <nav class="site-nav">
+    <a class="logo" href="index.html">BizGrow<span>&nbsp;Holdings</span></a>
+    <ul class="nav-links"><li><a href="products.html">Products</a></li><li><a href="index.html#features">Why Us</a></li><li><a href="index.html#contact">Contact</a></li></ul>
+    <a class="cart-btn" href="cart.html">Cart (<span data-cart-count>0</span>)</a>
+  </nav>
+  <main class="page-wrap">
+    <header class="page-heading"><h1>Your cart</h1><p>Update quantities, remove products, or continue to the demo checkout.</p></header>
+    <div class="checkout-layout">
+      <section class="panel cart-list" id="cart-items" aria-label="Cart items"></section>
+      <aside class="summary-card" id="cart-summary"></aside>
+    </div>
+  </main>
+  <footer class="site-footer">TechByte Store demo &mdash; <a href="products.html">Continue shopping</a></footer>
+  <div class="toast-msg" id="toast" role="status" aria-live="polite"></div>
+  <script src="shop.js"></script>
+  <script src="http://localhost:8000/embed.js" data-site-id="demo" data-gateway="http://localhost:8000" data-position="bottom-right" data-color="#0f172a" data-seamless="true"></script>
+</body>
+</html>

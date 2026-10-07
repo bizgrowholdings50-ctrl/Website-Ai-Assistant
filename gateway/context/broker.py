@@ -150,7 +150,11 @@ def list_site_configs() -> list[SiteConfig]:
     return list(_site_configs.values())
 
 
-def build_agent_context(site_id: str, user_context: dict | None = None) -> dict:
+def build_agent_context(
+    site_id: str,
+    user_context: dict | None = None,
+    include_action_permissions: bool = True,
+) -> dict:
     """Build the context that gets injected into the agent for a session.
 
     This is the core of the context broker: it merges site knowledge with
@@ -161,6 +165,7 @@ def build_agent_context(site_id: str, user_context: dict | None = None) -> dict:
     Args:
         site_id: The site identifier.
         user_context: Optional personal context from browser extension.
+        include_action_permissions: Whether to include website action instructions in the prompt.
 
     Returns:
         dict with 'system_prompt_additions' and 'permissions'.
@@ -192,10 +197,6 @@ def build_agent_context(site_id: str, user_context: dict | None = None) -> dict:
         if config.persona_voice:
             safe_voice = _sanitize_for_prompt(config.persona_voice, 500)
             parts.append(f"Voice style: {safe_voice}")
-        if config.welcome_message:
-            safe_msg = _sanitize_for_prompt(config.welcome_message, 500)
-            parts.append(f'When a user first connects, greet them with: "{safe_msg}"')
-
         # Site knowledge (inline config)
         if config.knowledge_base:
             safe_kb = _sanitize_for_prompt(config.knowledge_base, 50000)
@@ -214,9 +215,9 @@ def build_agent_context(site_id: str, user_context: dict | None = None) -> dict:
             parts.append("## Knowledge Base\n" + "\n\n".join(kb_parts))
 
         # Action permissions
-        if config.allowed_actions:
+        if include_action_permissions and config.allowed_actions:
             parts.append(f"## Allowed Actions\nYou may perform: {', '.join(config.allowed_actions)}")
-        if config.restricted_actions:
+        if include_action_permissions and config.restricted_actions:
             parts.append(f"## Restricted Actions\nDo NOT perform: {', '.join(config.restricted_actions)}")
 
         # Personal agent context (private, never shared with site analytics)

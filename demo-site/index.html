@@ -71,7 +71,7 @@
       color: #cbd5e1;
       padding: 8px 16px;
       border-radius: var(--radius);
-      cursor: pointer;
+      text-decoration: none;
       font-size: 13px;
       font-weight: 500;
       font-family: inherit;
@@ -465,12 +465,12 @@
 <nav class="site-nav">
   <div class="logo">BizGrow<span>&nbsp;Holdings</span></div>
   <ul class="nav-links">
-    <li><a href="#products">Products</a></li>
+    <li><a href="products.html">Products</a></li>
     <li><a href="#features">Why Us</a></li>
     <li><a href="#contact">Contact</a></li>
     <li><a href="#faq">FAQ</a></li>
   </ul>
-  <button class="cart-btn" id="cart-btn">Cart (0)</button>
+  <a class="cart-btn" href="cart.html">Cart (<span data-cart-count>0</span>)</a>
 </nav>
 
 <section class="hero">
@@ -485,7 +485,7 @@
 <div class="section" id="products">
   <div class="section-header">
     <h2>Featured products</h2>
-    <p>Our most popular picks this month.</p>
+    <p>Our most popular picks this month. <a href="products.html">Browse all products</a>.</p>
   </div>
 
   <div class="products-grid">
@@ -500,7 +500,7 @@
         <p class="product-desc">Active noise cancellation with 30-hour battery life and premium comfort fit for all-day listening.</p>
         <div class="product-footer">
           <div class="product-price"><span class="currency">$</span>79.99</div>
-          <button class="btn-add" data-product="headphones" data-price="79.99">Add to cart</button>
+          <button class="btn-add" data-product="headphones" data-testid="add-to-cart-headphones" aria-label="Add ProSound Wireless Headphones to cart" data-price="79.99">Add to cart</button>
         </div>
       </div>
     </div>
@@ -515,7 +515,7 @@
         <p class="product-desc">Mechanical switches with per-key RGB, wireless and USB-C, hot-swappable design.</p>
         <div class="product-footer">
           <div class="product-price"><span class="currency">$</span>129.99</div>
-          <button class="btn-add" data-product="keyboard" data-price="129.99">Add to cart</button>
+          <button class="btn-add" data-product="keyboard" data-testid="add-to-cart-keyboard" aria-label="Add MechKey Pro Keyboard to cart" data-price="129.99">Add to cart</button>
         </div>
       </div>
     </div>
@@ -530,7 +530,7 @@
         <p class="product-desc">16,000 DPI sensor, ergonomic shape, 8 programmable buttons, 70-hour battery.</p>
         <div class="product-footer">
           <div class="product-price"><span class="currency">$</span>49.99</div>
-          <button class="btn-add" data-product="mouse" data-price="49.99">Add to cart</button>
+          <button class="btn-add" data-product="mouse" data-testid="add-to-cart-mouse" aria-label="Add SwiftClick Gaming Mouse to cart" data-price="49.99">Add to cart</button>
         </div>
       </div>
     </div>
@@ -546,7 +546,7 @@
         <p class="product-desc">20,000mAh capacity with USB-C PD 65W fast charging, dual output ports.</p>
         <div class="product-footer">
           <div class="product-price"><span class="currency">$</span>39.99</div>
-          <button class="btn-add" data-product="powerbank" data-price="39.99">Add to cart</button>
+          <button class="btn-add" data-product="powerbank" data-testid="add-to-cart-powerbank" aria-label="Add PowerBank Ultra 20K to cart" data-price="39.99">Add to cart</button>
         </div>
       </div>
     </div>
@@ -561,7 +561,7 @@
         <p class="product-desc">Studio-quality cardioid condenser with zero-latency monitoring and mute toggle.</p>
         <div class="product-footer">
           <div class="product-price"><span class="currency">$</span>89.99</div>
-          <button class="btn-add" data-product="microphone" data-price="89.99">Add to cart</button>
+          <button class="btn-add" data-product="microphone" data-testid="add-to-cart-microphone" aria-label="Add ClearVoice USB Microphone to cart" data-price="89.99">Add to cart</button>
         </div>
       </div>
     </div>
@@ -576,7 +576,7 @@
         <p class="product-desc">WiFi-enabled with 16 million colors, music sync, app and voice control.</p>
         <div class="product-footer">
           <div class="product-price"><span class="currency">$</span>24.99</div>
-          <button class="btn-add" data-product="ledstrip" data-price="24.99">Add to cart</button>
+          <button class="btn-add" data-product="ledstrip" data-testid="add-to-cart-ledstrip" aria-label="Add SmartGlow LED Strip 5m to cart" data-price="24.99">Add to cart</button>
         </div>
       </div>
     </div>
@@ -698,46 +698,19 @@
 <div class="toast-msg" id="toast"></div>
 
 <script>
-  // Cart
-  let cart = [];
-  const cartBtn = document.getElementById('cart-btn');
-
-  document.querySelectorAll('.btn-add').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const product = btn.dataset.product;
-      const price = parseFloat(btn.dataset.price);
-      cart.push({ product, price });
-      cartBtn.textContent = `Cart (${cart.length})`;
-      btn.textContent = 'Added';
-      btn.classList.add('added');
-      showToast(`${product.charAt(0).toUpperCase() + product.slice(1)} added to cart`);
-      setTimeout(() => {
-        btn.textContent = 'Add to cart';
-        btn.classList.remove('added');
-      }, 2000);
-    });
-  });
-
   // Contact form
   document.getElementById('contact-form').addEventListener('submit', (e) => {
     e.preventDefault();
     showToast('Message sent — we\'ll get back to you soon.');
     e.target.reset();
   });
-
-  // Toast
-  function showToast(msg) {
-    const toast = document.getElementById('toast');
-    toast.textContent = msg;
-    toast.classList.add('visible');
-    setTimeout(() => toast.classList.remove('visible'), 2500);
-  }
 </script>
 
+<script src="shop.js"></script>
 <!-- WebClaw Integration -->
-<script src="../embed/dist/webclaw.js"
+<script src="http://localhost:8000/embed.js"
         data-site-id="demo"
-        data-gateway="http://localhost:8081"
+        data-gateway="http://localhost:8000"
         data-position="bottom-right"
         data-color="#0f172a"
         data-seamless="true">

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checkout - TechByte Store</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="shop.css">
+</head>
+<body>
+  <nav class="site-nav">
+    <a class="logo" href="index.html">BizGrow<span>&nbsp;Holdings</span></a>
+    <ul class="nav-links"><li><a href="products.html">Products</a></li><li><a href="index.html#features">Why Us</a></li><li><a href="index.html#contact">Contact</a></li></ul>
+    <a class="cart-btn" href="cart.html">Cart (<span data-cart-count>0</span>)</a>
+  </nav>
+  <main class="page-wrap">
+    <header class="page-heading"><h1>Checkout</h1><p>This is a demo checkout. No real payment will be collected.</p></header>
+    <div class="checkout-layout">
+      <form class="panel form-panel" id="checkout-form">
+        <h2>Delivery details</h2>
+        <div class="field"><label for="full-name">Full name</label><input id="full-name" name="name" autocomplete="name" required></div>
+        <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required></div>
+        <div class="field"><label for="address">Street address</label><input id="address" name="address" autocomplete="street-address" required></div>
+        <div class="field"><label for="city">City</label><input id="city" name="city" autocomplete="address-level2" required></div>
+        <div class="field"><label for="shipping">Shipping speed</label><select id="shipping" name="shipping"><option>Standard (2-5 business days)</option><option>Express (1-2 business days) — $9.99</option></select></div>
+        <button class="button button-primary" type="submit">Place demo order</button>
+      </form>
+      <aside class="summary-card" id="checkout-summary"></aside>
+    </div>
+  </main>
+  <footer class="site-footer">TechByte Store demo &mdash; <a href="cart.html">Return to cart</a></footer>
+  <div class="toast-msg" id="toast" role="status" aria-live="polite"></div>
+  <script src="shop.js"></script>
+  <script src="http://localhost:8000/embed.js" data-site-id="demo" data-gateway="http://localhost:8000" data-position="bottom-right" data-color="#0f172a" data-seamless="true"></script>
+</body>
+</html>

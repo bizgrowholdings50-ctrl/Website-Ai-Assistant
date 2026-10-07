@@ -125,6 +125,27 @@ export class AudioHandler {
     return this.playbackAnalyser;
   }
 
+  async waitForPlaybackToFinish(timeoutMs = 12000, quietPeriodMs = 500): Promise<void> {
+    const startedAt = Date.now();
+    let idleSince: number | null = null;
+
+    while (Date.now() - startedAt < timeoutMs) {
+      const playbackPending = this.activeSources.size > 0
+        || (this.playbackContext !== null
+          && this.playbackContext.currentTime < this.nextStartTime);
+
+      if (playbackPending) {
+        idleSince = null;
+      } else if (idleSince === null) {
+        idleSince = Date.now();
+      } else if (Date.now() - idleSince >= quietPeriodMs) {
+        return;
+      }
+
+      await new Promise(resolve => window.setTimeout(resolve, 25));
+    }
+  }
+
   private setState(state: AudioState): void {
     if (this._state !== state) {
       this._state = state;

@@ -9,6 +9,7 @@ export interface GatewayMessage {
 }
 
 export type MessageHandler = (msg: GatewayMessage) => void;
+export type AgentMode = 'site' | 'qa';
 
 export interface PageLocation {
   url: string;
@@ -16,6 +17,8 @@ export interface PageLocation {
   sectionId: string;
   sectionLabel: string;
 }
+
+const MAX_QA_CONTEXT_CHARS = 24000;
 
 export class GatewayClient {
   private ws: WebSocket | null = null;
@@ -25,12 +28,44 @@ export class GatewayClient {
   private handlers: Map<string, MessageHandler[]> = new Map();
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
+  private reconnectTimer: number | null = null;
   private lastAudioLocationKey = '';
+  private agentMode: AgentMode = 'site';
+  private pendingConnectReject: ((reason?: unknown) => void) | null = null;
 
-  constructor(gatewayUrl: string, siteId: string) {
+  constructor(gatewayUrl: string, siteId: string, sessionId?: string) {
     this.gatewayUrl = gatewayUrl.replace(/^http/, 'ws');
     this.siteId = siteId;
-    this.sessionId = this.generateSessionId();
+    this.sessionId = sessionId || this.generateSessionId();
+  }
+
+  getSessionId(): string {
+    return this.sessionId;
+  }
+
+  setAgentMode(agentMode: AgentMode): Promise<void> {
+    if (this.agentMode === agentMode) return Promise.resolve();
+
+    this.agentMode = agentMode;
+    this.reconnectAttempts = 0;
+    if (this.reconnectTimer !== null) {
+      window.clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.pendingConnectReject?.(new Error('Connection replaced to change agent mode.'));
+    this.pendingConnectReject = null;
+
+    const previousSocket = this.ws;
+    this.ws = null;
+    if (previousSocket) {
+      previousSocket.onclose = null;
+      previousSocket.onerror = null;
+      previousSocket.onmessage = null;
+      previousSocket.onopen = null;
+      previousSocket.close();
+    }
+
+    return this.connect();
   }
 
   private generateSessionId(): string {
@@ -38,20 +73,29 @@ export class GatewayClient {
   }
 
   connect(): Promise<void> {
+    if (this.reconnectTimer !== null) {
+      window.clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     return new Promise((resolve, reject) => {
-      const url = `${this.gatewayUrl}/ws/${this.siteId}/${this.sessionId}`;
-      this.ws = new WebSocket(url);
+      const url = `${this.gatewayUrl}/ws/${this.siteId}/${this.sessionId}?agent_mode=${this.agentMode}`;
+      const socket = new WebSocket(url);
+      this.ws = socket;
+      this.pendingConnectReject = reject;
 
-      this.ws.onopen = () => {
+      socket.onopen = () => {
+        if (this.ws !== socket) return;
+        this.pendingConnectReject = null;
         this.reconnectAttempts = 0;
         this.lastAudioLocationKey = '';
         this.emit('connected', { type: 'connected' });
         resolve();
       };
 
-      this.ws.binaryType = 'arraybuffer';
+      socket.binaryType = 'arraybuffer';
 
-      this.ws.onmessage = (event) => {
+      socket.onmessage = (event) => {
+        if (this.ws !== socket) return;
         // Binary frames = raw PCM audio from Gemini
         if (event.data instanceof ArrayBuffer) {
           this.emit('audio', {
@@ -70,13 +114,20 @@ export class GatewayClient {
         }
       };
 
-      this.ws.onclose = () => {
+      socket.onclose = () => {
+        if (this.ws !== socket) return;
+        if (this.pendingConnectReject) {
+          this.pendingConnectReject(new Error('Gateway WebSocket closed before connecting.'));
+          this.pendingConnectReject = null;
+        }
         this.emit('disconnected', { type: 'disconnected' });
         this.attemptReconnect();
       };
 
-      this.ws.onerror = (err) => {
+      socket.onerror = (err) => {
+        if (this.ws !== socket) return;
         console.error('[WebClaw] WebSocket error:', err);
+        this.pendingConnectReject = null;
         reject(err);
       };
     });
@@ -86,7 +137,10 @@ export class GatewayClient {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) return;
     this.reconnectAttempts++;
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 10000);
-    setTimeout(() => this.connect().catch(() => {}), delay);
+    this.reconnectTimer = window.setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connect().catch(() => {});
+    }, delay);
   }
 
   private handleMessage(msg: any): void {
@@ -174,12 +228,30 @@ export class GatewayClient {
     }
   }
 
-  sendText(text: string, location?: PageLocation): void {
-    this.send({ type: 'text', text, location });
+  sendText(text: string, location?: PageLocation, qaContext = ''): void {
+    this.send({
+      type: 'text',
+      text,
+      location,
+      ...(this.agentMode === 'qa' ? { qa_context: qaContext.slice(0, MAX_QA_CONTEXT_CHARS) } : {}),
+      agent_mode: this.agentMode,
+    });
   }
 
   sendDomSnapshot(html: string, url: string): void {
     this.send({ type: 'dom_snapshot', html, url });
+  }
+
+  sendQaSiteContext(content: string): void {
+    if (this.agentMode === 'qa') {
+      if (content.length > MAX_QA_CONTEXT_CHARS) {
+        console.warn('[WebClaw] Trimming oversized Q&A website context before sending.');
+      }
+      this.send({
+        type: 'qa_context',
+        content: content.slice(0, MAX_QA_CONTEXT_CHARS),
+      });
+    }
   }
 
   sendActionResult(callId: string, result: unknown): void {
@@ -191,7 +263,11 @@ export class GatewayClient {
       if (location) {
         const locationKey = JSON.stringify(location);
         if (locationKey !== this.lastAudioLocationKey) {
-          this.send({ type: 'audio_context', location });
+          this.send({
+            type: 'audio_context',
+            location,
+            agent_mode: this.agentMode,
+          });
           this.lastAudioLocationKey = locationKey;
         }
       }
@@ -211,14 +287,18 @@ export class GatewayClient {
     this.send({ type: 'negotiate', capabilities });
   }
 
-  private send(data: unknown): void {
+  private send(data: Record<string, unknown>): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(data));
+      this.ws.send(JSON.stringify({ ...data, agent_mode: this.agentMode }));
     }
   }
 
   disconnect(): void {
     this.maxReconnectAttempts = 0; // Prevent reconnect
+    if (this.reconnectTimer !== null) {
+      window.clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     this.ws?.close();
   }
 }
