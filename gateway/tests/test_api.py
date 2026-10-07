@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
+import main
 from main import (
     MAX_QA_CONTEXT_CHARS,
     TOOL_DECLARATIONS,
@@ -18,17 +19,124 @@ from main import (
 
 
 @pytest.fixture
-def client():
-    """Create a test client."""
-    return TestClient(app)
+def client(monkeypatch):
+    """Create a signed-in test client for protected dashboard APIs."""
+    monkeypatch.setattr(main, "ADMIN_USERNAME", "test-admin")
+    monkeypatch.setattr(main, "ADMIN_PASSWORD", "test-password-long-enough")
+    monkeypatch.setattr(main, "ADMIN_SESSION_SECRET", "test-session-secret-long-enough-123")
+    main._admin_login_failures.clear()
+    with TestClient(app) as test_client:
+        response = test_client.post(
+            "/api/auth/login",
+            json={"username": "test-admin", "password": "test-password-long-enough"},
+        )
+        assert response.status_code == 200
+        rate_limiter.requests.clear()
+        yield test_client
 
 
 @pytest.fixture(autouse=True)
 def reset_rate_limiter():
     """Reset rate limiter before each test."""
     rate_limiter.requests.clear()
+    main._admin_login_failures.clear()
     yield
     rate_limiter.requests.clear()
+    main._admin_login_failures.clear()
+
+
+def test_admin_dashboard_and_api_require_login(client):
+    with TestClient(app) as anonymous:
+        api_response = anonymous.get("/api/sites")
+        dashboard_response = anonymous.get("/dashboard/", follow_redirects=False)
+        status_response = anonymous.get("/api/auth/status")
+        login_page = anonymous.get("/admin/login")
+        health_response = anonymous.get("/api/health")
+        welcome_response = anonymous.get("/api/sites/demo/welcome")
+
+    assert api_response.status_code == 401
+    assert dashboard_response.status_code == 303
+    assert dashboard_response.headers["location"] == "/admin/login"
+    assert login_page.status_code == 200
+    assert "Sign in" in login_page.text
+    assert health_response.status_code == 200
+    assert status_response.json() == {
+        "configured": True,
+        "authenticated": False,
+        "configuration_error": "",
+    }
+    assert welcome_response.status_code == 200
+
+
+def test_admin_login_sets_http_only_cookie_and_serves_dashboard(monkeypatch):
+    monkeypatch.setattr(main, "ADMIN_USERNAME", "test-admin")
+    monkeypatch.setattr(main, "ADMIN_PASSWORD", "test-password-long-enough")
+    monkeypatch.setattr(main, "ADMIN_SESSION_SECRET", "test-session-secret-long-enough-123")
+    with TestClient(app) as signed_in:
+        login = signed_in.post(
+            "/api/auth/login",
+            json={"username": "test-admin", "password": "test-password-long-enough"},
+        )
+        dashboard = signed_in.get("/dashboard/")
+
+    cookie = login.headers["set-cookie"].lower()
+    assert login.status_code == 200
+    assert "httponly" in cookie
+    assert "samesite=strict" in cookie
+    assert "path=/" in cookie
+    assert dashboard.status_code == 200
+    assert "/dashboard/assets/" in dashboard.text
+
+
+def test_admin_session_rejects_a_tampered_cookie(client):
+    token = client.cookies.get(main.ADMIN_SESSION_COOKIE)
+    assert token
+    tampered_token = ("A" if token[0] != "A" else "B") + token[1:]
+    with TestClient(app) as anonymous:
+        anonymous.cookies.set(main.ADMIN_SESSION_COOKIE, tampered_token)
+        response = anonymous.get("/api/sites")
+
+    assert response.status_code == 401
+
+
+def test_admin_login_rejects_bad_credentials_and_throttles(monkeypatch):
+    monkeypatch.setattr(main, "ADMIN_USERNAME", "test-admin")
+    monkeypatch.setattr(main, "ADMIN_PASSWORD", "test-password-long-enough")
+    monkeypatch.setattr(main, "ADMIN_SESSION_SECRET", "test-session-secret-long-enough-123")
+    with TestClient(app) as anonymous:
+        for _ in range(main.ADMIN_LOGIN_MAX_ATTEMPTS):
+            response = anonymous.post(
+                "/api/auth/login",
+                json={"username": "test-admin", "password": "wrong-password"},
+            )
+            assert response.status_code == 401
+        throttled = anonymous.post(
+            "/api/auth/login",
+            json={"username": "test-admin", "password": "test-password-long-enough"},
+        )
+
+    assert throttled.status_code == 429
+
+
+def test_admin_logout_revokes_session(client):
+    response = client.post("/api/auth/logout")
+    assert response.status_code == 200
+    assert client.get("/api/sites").status_code == 401
+
+
+def test_admin_routes_fail_closed_without_credentials(monkeypatch):
+    monkeypatch.setattr(main, "ADMIN_USERNAME", "")
+    monkeypatch.setattr(main, "ADMIN_PASSWORD", "")
+    monkeypatch.setattr(main, "ADMIN_SESSION_SECRET", "")
+    with TestClient(app) as anonymous:
+        api_response = anonymous.get("/api/sites")
+        login_response = anonymous.post(
+            "/api/auth/login",
+            json={"username": "admin", "password": "password"},
+        )
+
+    assert api_response.status_code == 503
+    assert login_response.status_code == 503
 
 
 def test_live_config_exposes_actions_only_in_site_mode():

@@ -1,4 +1,4 @@
-(function(){const t=document.createElement("link").relList;if(t&&t.supports&&t.supports("modulepreload"))return;for(const n of document.querySelectorAll('link[rel="modulepreload"]'))a(n);new MutationObserver(n=>{for(const s of n)if(s.type==="childList")for(const i of s.addedNodes)i.tagName==="LINK"&&i.rel==="modulepreload"&&a(i)}).observe(document,{childList:!0,subtree:!0});function o(n){const s={};return n.integrity&&(s.integrity=n.integrity),n.referrerPolicy&&(s.referrerPolicy=n.referrerPolicy),n.crossOrigin==="use-credentials"?s.credentials="include":n.crossOrigin==="anonymous"?s.credentials="omit":s.credentials="same-origin",s}function a(n){if(n.ep)return;n.ep=!0;const s=o(n);fetch(n.href,s)}})();const L=window.location.origin;async function l(e,t={}){const o=await fetch(`${L}${e}`,{headers:{"Content-Type":"application/json"},method:t.method||"GET",body:t.body?JSON.stringify(t.body):void 0});if(!o.ok)throw new Error(`API error: ${o.status} ${o.statusText}`);return o.json()}function _(){return L}let k;function r(e,t="success"){const o=document.getElementById("toast");o.textContent=e,o.className=`toast toast-${t} show`,clearTimeout(k),k=setTimeout(()=>o.classList.remove("show"),3e3)}function F(e){navigator.clipboard.writeText(e).then(()=>r("Copied to clipboard"))}function d(e){const t=document.createElement("div");return t.textContent=e,t.innerHTML}function I(e){return e<60?`${Math.round(e)}s`:`${Math.floor(e/60)}m ${Math.round(e%60)}s`}function p(e="inbox"){const t={inbox:'<svg class="empty-state-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 8H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-10a2 2 0 0 0-2-2z"/><path d="M2 8l10 7 10-7"/></svg>',document:'<svg class="empty-state-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',activity:'<svg class="empty-state-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 17"/><polyline points="17 6 23 6 23 12"/></svg>',settings:'<svg class="empty-state-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 5.08l4.24 4.24M1 12h6m6 0h6m-17.78 7.78l4.24-4.24m5.08-5.08l4.24-4.24"/></svg>'};return t[e]||t.inbox}const E=["click","type","scroll","navigate","highlight","read","select","check"];let f=[];async function x(e){var t;e.innerHTML=`
+(function(){const t=document.createElement("link").relList;if(t&&t.supports&&t.supports("modulepreload"))return;for(const n of document.querySelectorAll('link[rel="modulepreload"]'))a(n);new MutationObserver(n=>{for(const s of n)if(s.type==="childList")for(const i of s.addedNodes)i.tagName==="LINK"&&i.rel==="modulepreload"&&a(i)}).observe(document,{childList:!0,subtree:!0});function o(n){const s={};return n.integrity&&(s.integrity=n.integrity),n.referrerPolicy&&(s.referrerPolicy=n.referrerPolicy),n.crossOrigin==="use-credentials"?s.credentials="include":n.crossOrigin==="anonymous"?s.credentials="omit":s.credentials="same-origin",s}function a(n){if(n.ep)return;n.ep=!0;const s=o(n);fetch(n.href,s)}})();const _=window.location.origin;async function l(e,t={}){const o=await fetch(`${_}${e}`,{headers:{"Content-Type":"application/json"},method:t.method||"GET",body:t.body?JSON.stringify(t.body):void 0});if(!o.ok)throw o.status===401&&!e.startsWith("/api/auth/")&&window.location.assign("/admin/login"),new Error(`API error: ${o.status} ${o.statusText}`);return o.json()}function I(){return _}let k;function r(e,t="success"){const o=document.getElementById("toast");o.textContent=e,o.className=`toast toast-${t} show`,clearTimeout(k),k=setTimeout(()=>o.classList.remove("show"),3e3)}function C(e){navigator.clipboard.writeText(e).then(()=>r("Copied to clipboard"))}function d(e){const t=document.createElement("div");return t.textContent=e,t.innerHTML}function B(e){return e<60?`${Math.round(e)}s`:`${Math.floor(e/60)}m ${Math.round(e%60)}s`}function p(e="inbox"){const t={inbox:'<svg class="empty-state-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 8H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-10a2 2 0 0 0-2-2z"/><path d="M2 8l10 7 10-7"/></svg>',document:'<svg class="empty-state-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',activity:'<svg class="empty-state-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 17"/><polyline points="17 6 23 6 23 12"/></svg>',settings:'<svg class="empty-state-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 5.08l4.24 4.24M1 12h6m6 0h6m-17.78 7.78l4.24-4.24m5.08-5.08l4.24-4.24"/></svg>'};return t[e]||t.inbox}const E=["click","type","scroll","navigate","highlight","read","select","check"];let f=[];async function x(e){var t;e.innerHTML=`
     <div class="page-header">
       <h2>Sites</h2>
       <p>Manage registered sites and their configurations</p>
@@ -39,7 +39,7 @@
           `).join("")}
       </div>
       <div id="site-form" class="card hidden"></div>
-    `,(t=document.getElementById("add-site-btn"))==null||t.addEventListener("click",()=>B()),e.querySelectorAll("[data-edit]").forEach(a=>a.addEventListener("click",()=>A(a.dataset.edit))),e.querySelectorAll("[data-delete]").forEach(a=>a.addEventListener("click",()=>D(a.dataset.delete)))}catch(o){console.error("Failed to load sites:",o),e.innerHTML=`
+    `,(t=document.getElementById("add-site-btn"))==null||t.addEventListener("click",()=>z()),e.querySelectorAll("[data-edit]").forEach(a=>a.addEventListener("click",()=>A(a.dataset.edit))),e.querySelectorAll("[data-delete]").forEach(a=>a.addEventListener("click",()=>H(a.dataset.delete)))}catch(o){console.error("Failed to load sites:",o),e.innerHTML=`
       <div class="page-header">
         <h2>Sites</h2>
         <p>Manage registered sites and their configurations</p>
@@ -51,7 +51,7 @@
           <p style="font-size:12px;color:var(--text-secondary)">Please try refreshing the page</p>
         </div>
       </div>
-    `}}async function A(e){try{const t=await l(`/api/sites/${e}`);t.config&&(w("sites"),setTimeout(()=>B(t.config),50))}catch(t){console.error("Failed to load site:",t),r("Failed to load site","error")}}function B(e){var n,s;const t=document.getElementById("site-form");if(!t)return;t.classList.remove("hidden");const o=!!e,a=(e==null?void 0:e.allowed_actions)||E;t.innerHTML=`
+    `}}async function A(e){try{const t=await l(`/api/sites/${e}`);t.config&&(w("sites"),setTimeout(()=>z(t.config),50))}catch(t){console.error("Failed to load site:",t),r("Failed to load site","error")}}function z(e){var n,s;const t=document.getElementById("site-form");if(!t)return;t.classList.remove("hidden");const o=!!e,a=(e==null?void 0:e.allowed_actions)||E;t.innerHTML=`
     <h3>${o?"Edit Site":"Add New Site"}</h3>
     <div class="form-group">
       <label>Domain</label>
@@ -92,7 +92,7 @@
       <button class="btn btn-primary" id="save-site-btn">${o?"Update":"Create"}</button>
       <button class="btn btn-outline" id="cancel-site-btn">Cancel</button>
     </div>
-  `,(n=document.getElementById("save-site-btn"))==null||n.addEventListener("click",()=>C(e==null?void 0:e.site_id)),(s=document.getElementById("cancel-site-btn"))==null||s.addEventListener("click",()=>t.classList.add("hidden")),t.scrollIntoView({behavior:"smooth"})}async function C(e){const t=document.getElementById("f-domain").value.trim(),o=document.getElementById("f-name").value.trim();if(!t){r("Please enter a domain","error"),document.getElementById("f-domain").focus();return}if(!o){r("Please enter a persona name","error"),document.getElementById("f-name").focus();return}try{const a={domain:t,persona_name:o,persona_voice:document.getElementById("f-voice").value.trim(),welcome_message:document.getElementById("f-welcome").value.trim(),knowledge_base:document.getElementById("f-kb").value.trim(),escalation_email:document.getElementById("f-email").value.trim(),allowed_actions:[...document.querySelectorAll(".action-cb:checked")].map(n=>n.value),restricted_actions:[...document.querySelectorAll(".action-cb:not(:checked)")].map(n=>n.value)};e?(await l(`/api/sites/${e}`,{method:"PUT",body:a}),r("Site updated")):(await l("/api/sites",{method:"POST",body:a}),r("Site created")),x(document.getElementById("main-content"))}catch(a){console.error("Failed to save site:",a),r("Failed to save site","error")}}async function D(e){if(confirm(`Delete site ${d(e)}? This cannot be undone.`))try{await l(`/api/sites/${e}`,{method:"DELETE"}),r("Site deleted"),x(document.getElementById("main-content"))}catch(t){console.error("Failed to delete site:",t),r("Failed to delete site","error")}}async function H(e){var t,o;e.innerHTML=`
+  `,(n=document.getElementById("save-site-btn"))==null||n.addEventListener("click",()=>D(e==null?void 0:e.site_id)),(s=document.getElementById("cancel-site-btn"))==null||s.addEventListener("click",()=>t.classList.add("hidden")),t.scrollIntoView({behavior:"smooth"})}async function D(e){const t=document.getElementById("f-domain").value.trim(),o=document.getElementById("f-name").value.trim();if(!t){r("Please enter a domain","error"),document.getElementById("f-domain").focus();return}if(!o){r("Please enter a persona name","error"),document.getElementById("f-name").focus();return}try{const a={domain:t,persona_name:o,persona_voice:document.getElementById("f-voice").value.trim(),welcome_message:document.getElementById("f-welcome").value.trim(),knowledge_base:document.getElementById("f-kb").value.trim(),escalation_email:document.getElementById("f-email").value.trim(),allowed_actions:[...document.querySelectorAll(".action-cb:checked")].map(n=>n.value),restricted_actions:[...document.querySelectorAll(".action-cb:not(:checked)")].map(n=>n.value)};e?(await l(`/api/sites/${e}`,{method:"PUT",body:a}),r("Site updated")):(await l("/api/sites",{method:"POST",body:a}),r("Site created")),x(document.getElementById("main-content"))}catch(a){console.error("Failed to save site:",a),r("Failed to save site","error")}}async function H(e){if(confirm(`Delete site ${d(e)}? This cannot be undone.`))try{await l(`/api/sites/${e}`,{method:"DELETE"}),r("Site deleted"),x(document.getElementById("main-content"))}catch(t){console.error("Failed to delete site:",t),r("Failed to delete site","error")}}async function P(e){var t,o;e.innerHTML=`
     <div class="page-header">
       <h2>Overview</h2>
       <p>Dashboard summary and quick integration setup</p>
@@ -100,7 +100,7 @@
     <div class="loading-placeholder">
       <div class="loading-spinner"></div> Loading...
     </div>
-  `;try{const n=(await l("/api/sites")).sites||[],s=_();if(e.innerHTML=`
+  `;try{const n=(await l("/api/sites")).sites||[],s=I();if(e.innerHTML=`
       <div class="page-header">
         <h2>Overview</h2>
         <p>Dashboard summary and quick integration setup</p>
@@ -159,7 +159,7 @@
 &lt;/script&gt;</pre>
         </div>
       </div>
-    `,e.querySelectorAll("[data-edit-site]").forEach(i=>{i.addEventListener("click",()=>A(i.dataset.editSite))}),(o=document.getElementById("copy-snippet-btn"))==null||o.addEventListener("click",()=>{F(document.getElementById("snippet").textContent||"")}),n.length>0)try{const c=(await l(`/api/sites/${n[0].site_id}/stats`)).stats||{},b=(M,T)=>{const $=document.getElementById(M);$&&($.textContent=String(T||"0"))};b("stat-sessions",c.sessions_total),b("stat-messages",c.messages_text),b("stat-actions",c.actions_executed)}catch(i){console.error("Failed to load stats:",i)}}catch(a){console.error("Failed to load overview:",a),e.innerHTML=`
+    `,e.querySelectorAll("[data-edit-site]").forEach(i=>{i.addEventListener("click",()=>A(i.dataset.editSite))}),(o=document.getElementById("copy-snippet-btn"))==null||o.addEventListener("click",()=>{C(document.getElementById("snippet").textContent||"")}),n.length>0)try{const c=(await l(`/api/sites/${n[0].site_id}/stats`)).stats||{},b=(M,F)=>{const $=document.getElementById(M);$&&($.textContent=String(F||"0"))};b("stat-sessions",c.sessions_total),b("stat-messages",c.messages_text),b("stat-actions",c.actions_executed)}catch(i){console.error("Failed to load stats:",i)}}catch(a){console.error("Failed to load overview:",a),e.innerHTML=`
       <div class="page-header">
         <h2>Overview</h2>
         <p>Dashboard summary and quick integration setup</p>
@@ -252,7 +252,7 @@
       <button class="btn btn-primary" id="save-kb-btn">${e?"Update":"Create"}</button>
       <button class="btn btn-outline" id="cancel-kb-btn">Cancel</button>
     </div>
-  `,(n=document.getElementById("save-kb-btn"))==null||n.addEventListener("click",()=>P(e)),(s=document.getElementById("cancel-kb-btn"))==null||s.addEventListener("click",()=>a.classList.add("hidden")),a.scrollIntoView({behavior:"smooth"}))}async function P(e){const t=document.getElementById("kb-title").value.trim(),o=document.getElementById("kb-content").value.trim();if(!t){r("Please enter a title","error"),document.getElementById("kb-title").focus();return}if(!o){r("Please enter some content","error"),document.getElementById("kb-content").focus();return}try{const a={title:t,content:o};e?(await l(`/api/sites/${v}/knowledge/${e}`,{method:"PUT",body:a}),r("Document updated")):(await l(`/api/sites/${v}/knowledge`,{method:"POST",body:a}),r("Document added")),y(document.getElementById("main-content"))}catch(a){console.error("Failed to save document:",a),r("Failed to save document","error")}}async function N(e){if(confirm("Delete this document?"))try{await l(`/api/sites/${v}/knowledge/${e}`,{method:"DELETE"}),r("Document deleted"),y(document.getElementById("main-content"))}catch(t){console.error("Failed to delete document:",t),r("Failed to delete document","error")}}let h=[],m="";async function u(e){var t;e.innerHTML=`
+  `,(n=document.getElementById("save-kb-btn"))==null||n.addEventListener("click",()=>O(e)),(s=document.getElementById("cancel-kb-btn"))==null||s.addEventListener("click",()=>a.classList.add("hidden")),a.scrollIntoView({behavior:"smooth"}))}async function O(e){const t=document.getElementById("kb-title").value.trim(),o=document.getElementById("kb-content").value.trim();if(!t){r("Please enter a title","error"),document.getElementById("kb-title").focus();return}if(!o){r("Please enter some content","error"),document.getElementById("kb-content").focus();return}try{const a={title:t,content:o};e?(await l(`/api/sites/${v}/knowledge/${e}`,{method:"PUT",body:a}),r("Document updated")):(await l(`/api/sites/${v}/knowledge`,{method:"POST",body:a}),r("Document added")),y(document.getElementById("main-content"))}catch(a){console.error("Failed to save document:",a),r("Failed to save document","error")}}async function N(e){if(confirm("Delete this document?"))try{await l(`/api/sites/${v}/knowledge/${e}`,{method:"DELETE"}),r("Document deleted"),y(document.getElementById("main-content"))}catch(t){console.error("Failed to delete document:",t),r("Failed to delete document","error")}}let h=[],m="";async function u(e){var t;e.innerHTML=`
     <div class="page-header">
       <h2>Sessions</h2>
       <p>View and analyze visitor interactions</p>
@@ -297,13 +297,13 @@
                 <td><code>${d((s.session_id||s.user_id||"-").substring(0,12))}</code></td>
                 <td>${d(s.user_id||"-")}</td>
                 <td>${((i=s.metadata)==null?void 0:i.message_count)||(s.messages||[]).length||"-"}</td>
-                <td>${(c=s.metadata)!=null&&c.duration_seconds?I(s.metadata.duration_seconds):"-"}</td>
+                <td>${(c=s.metadata)!=null&&c.duration_seconds?B(s.metadata.duration_seconds):"-"}</td>
                 <td>${s.updated_at?new Date(s.updated_at*1e3).toLocaleString():"-"}</td>
               </tr>
             `}).join("")}
           </tbody>
         </table>`}
-    `,(t=document.getElementById("sess-site"))==null||t.addEventListener("change",s=>{m=s.target.value,u(e)}),e.querySelectorAll("[data-view-session]").forEach(s=>s.addEventListener("click",()=>O(e,s.dataset.viewSession)))}catch(o){console.error("Failed to load sessions:",o),e.innerHTML=`
+    `,(t=document.getElementById("sess-site"))==null||t.addEventListener("change",s=>{m=s.target.value,u(e)}),e.querySelectorAll("[data-view-session]").forEach(s=>s.addEventListener("click",()=>q(e,s.dataset.viewSession)))}catch(o){console.error("Failed to load sessions:",o),e.innerHTML=`
       <div class="page-header">
         <h2>Sessions</h2>
         <p>View and analyze visitor interactions</p>
@@ -315,7 +315,7 @@
           <p style="font-size:12px;color:var(--text-secondary)">Please try refreshing the page</p>
         </div>
       </div>
-    `}}async function O(e,t){var o,a;if(t){e.innerHTML=`
+    `}}async function q(e,t){var o,a;if(t){e.innerHTML=`
     <div class="loading-placeholder">
       <div class="loading-spinner"></div> Loading session...
     </div>
@@ -336,7 +336,7 @@
           </div>
           <div>
             <div style="font-size:11px;font-weight:500;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px">Duration</div>
-            <p style="font-size:13px;color:var(--text)">${(o=s.metadata)!=null&&o.duration_seconds?I(s.metadata.duration_seconds):"unknown"}</p>
+            <p style="font-size:13px;color:var(--text)">${(o=s.metadata)!=null&&o.duration_seconds?B(s.metadata.duration_seconds):"unknown"}</p>
           </div>
         </div>
       </div>
@@ -352,7 +352,7 @@
           `).join("")}
         </div>
       </div>
-    `,(a=document.getElementById("back-to-sessions"))==null||a.addEventListener("click",()=>u(e))}catch(n){console.error("Failed to load session:",n),r("Failed to load session","error"),u(e)}}}async function z(e){var t;e.innerHTML=`
+    `,(a=document.getElementById("back-to-sessions"))==null||a.addEventListener("click",()=>u(e))}catch(n){console.error("Failed to load session:",n),r("Failed to load session","error"),u(e)}}}async function T(e){var t;e.innerHTML=`
     <div class="page-header">
       <h2>Settings</h2>
       <p>System configuration and status</p>
@@ -360,7 +360,7 @@
     <div class="loading-placeholder">
       <div class="loading-spinner"></div> Loading settings...
     </div>
-  `;try{const o=_();let a="checking...",n="#64748b",s="v0.2.0",i="unknown";try{const c=await l("/api/health");a=c.status==="ok"?"Healthy":"Degraded",n=c.status==="ok"?"#059669":"#d97706",c.version&&(s=`v${c.version}`),i=c.firestore||"unknown"}catch{a="Unreachable",n="#dc2626"}e.innerHTML=`
+  `;try{const o=I();let a="checking...",n="#64748b",s="v0.3.0",i="unknown";try{const c=await l("/api/health");a=c.status==="ok"?"Healthy":"Degraded",n=c.status==="ok"?"#059669":"#d97706",c.version&&(s=`v${c.version}`),i=c.firestore||"unknown"}catch{a="Unreachable",n="#dc2626"}e.innerHTML=`
       <div class="page-header">
         <h2>Settings</h2>
         <p>System configuration and status</p>
@@ -401,7 +401,7 @@
         <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-top:16px">
           <div>
             <div style="font-size:11px;font-weight:500;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">Dashboard</div>
-            <p style="font-size:13px;color:var(--text)">v0.2.0</p>
+            <p style="font-size:13px;color:var(--text)">v0.3.0</p>
           </div>
           <div>
             <div style="font-size:11px;font-weight:500;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">Gateway</div>
@@ -431,7 +431,7 @@
           <li><a href="${d(o)}/health" target="_blank" rel="noopener" style="color:var(--primary);text-decoration:none">API Health Endpoint</a></li>
         </ul>
       </div>
-    `,(t=document.getElementById("refresh-health"))==null||t.addEventListener("click",()=>z(e))}catch(o){console.error("Failed to load settings:",o),e.innerHTML=`
+    `,(t=document.getElementById("refresh-health"))==null||t.addEventListener("click",()=>T(e))}catch(o){console.error("Failed to load settings:",o),e.innerHTML=`
       <div class="page-header">
         <h2>Settings</h2>
         <p>System configuration and status</p>
@@ -443,4 +443,4 @@
           <p style="font-size:12px;color:var(--text-secondary)">Please try refreshing the page</p>
         </div>
       </div>
-    `}}const q={overview:H,sites:x,knowledge:y,sessions:u,settings:z};function w(e){var o;document.querySelectorAll(".nav-item").forEach(a=>a.classList.remove("active")),(o=document.querySelector(`[data-page="${e}"]`))==null||o.classList.add("active");const t=document.getElementById("main-content");q[e](t)}document.querySelectorAll(".nav-item").forEach(e=>{e.addEventListener("click",()=>{const t=e.dataset.page;t&&w(t)})});w("overview");
+    `}}const U={overview:P,sites:x,knowledge:y,sessions:u,settings:T};function w(e){var o;document.querySelectorAll(".nav-item").forEach(a=>a.classList.remove("active")),(o=document.querySelector(`[data-page="${e}"]`))==null||o.classList.add("active");const t=document.getElementById("main-content");U[e](t)}document.querySelectorAll(".nav-item").forEach(e=>{e.addEventListener("click",()=>{const t=e.dataset.page;t&&w(t)})});var L;(L=document.getElementById("admin-logout"))==null||L.addEventListener("click",async()=>{try{await l("/api/auth/logout",{method:"POST"}),window.location.assign("/admin/login")}catch(e){console.error("Failed to sign out:",e)}});w("overview");

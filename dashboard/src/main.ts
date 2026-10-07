@@ -1,4 +1,5 @@
 import './styles.css';
+import { api } from './api';
 import { renderOverview } from './pages/overview';
 import { renderSites } from './pages/sites';
 import { renderKnowledge } from './pages/knowledge';
@@ -28,6 +29,15 @@ document.querySelectorAll<HTMLElement>('.nav-item').forEach(item => {
     const page = item.dataset.page as Page;
     if (page) navigate(page);
   });
+});
+
+document.getElementById('admin-logout')?.addEventListener('click', async () => {
+  try {
+    await api('/api/auth/logout', { method: 'POST' });
+    window.location.assign('/admin/login');
+  } catch (error) {
+    console.error('Failed to sign out:', error);
+  }
 });
 
 // Initial render

@@ -227,8 +227,13 @@ gcloud run services update webclaw-gateway \
 | Variable | Required | Description |
 |:---------|:--------:|:------------|
 | `GOOGLE_API_KEY` | ✅ | Gemini API key |
+| `ADMIN_USERNAME` | ✅ | Dashboard administrator username |
+| `ADMIN_PASSWORD` | ✅ | Unique dashboard password (minimum 16 characters) |
+| `ADMIN_SESSION_SECRET` | ✅ | Random session-signing secret (minimum 32 characters) |
 | `GOOGLE_CLOUD_PROJECT` | | GCP project (auto-set on Cloud Run) |
 | `PORT` | | Server port (auto-set by Cloud Run, default 8080) |
+
+Store the admin credentials and session secret in Secret Manager; do not put production values in source control. The dashboard management APIs remain unavailable until all three admin variables are configured.
 
 ### Custom Domain
 

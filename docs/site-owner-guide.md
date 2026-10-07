@@ -217,11 +217,15 @@ curl -X DELETE https://your-gateway.run.app/api/sites/a1b2c3d4
 
 ### Using the Dashboard
 
-The gateway includes a built-in dashboard at `/dashboard`. Open your browser to:
+The gateway includes a built-in dashboard at `/dashboard`. Configure `ADMIN_USERNAME`, `ADMIN_PASSWORD` (at least 16 characters), and a random `ADMIN_SESSION_SECRET` (at least 32 characters) on the Gateway before signing in. Use a unique password, keep these values out of source control, and serve the dashboard over HTTPS in production. The management API and dashboard fail closed if the credentials are missing.
+
+Open your browser to:
 
 ```
 https://your-gateway.run.app/dashboard
 ```
+
+You will be redirected to the admin sign-in page if you are not authenticated.
 
 The dashboard provides a visual interface for all management tasks:
 

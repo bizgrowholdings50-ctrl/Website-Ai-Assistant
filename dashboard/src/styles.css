@@ -115,6 +115,10 @@ body {
   color: var(--primary);
 }
 .sidebar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 16px 20px;
   border-top: 1px solid var(--border);
 }

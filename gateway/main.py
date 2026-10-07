@@ -2,11 +2,14 @@
 
 import asyncio
 import base64
+import hashlib
+import hmac
 import inspect
 import json
 import logging
 import os
 import re
+import secrets
 import time
 import uuid
 import warnings
@@ -17,11 +20,11 @@ from typing import Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from google import genai
 from google.genai import types
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 from websockets.exceptions import ConnectionClosedError
 
 # Load environment variables
@@ -61,6 +64,75 @@ warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
 WEBCLAW_MODEL = os.environ.get("WEBCLAW_MODEL", "gemini-2.5-flash-native-audio-latest")
 WEBCLAW_QA_MODEL = os.environ.get("WEBCLAW_QA_MODEL", "gemini-2.5-flash")
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+ADMIN_SESSION_SECRET = os.environ.get("ADMIN_SESSION_SECRET", "")
+ADMIN_SESSION_COOKIE = "webclaw_admin_session"
+ADMIN_SESSION_TTL_SECONDS = 8 * 60 * 60
+ADMIN_LOGIN_MAX_ATTEMPTS = 5
+ADMIN_LOGIN_WINDOW_SECONDS = 15 * 60
+_admin_login_failures: dict[str, list[float]] = defaultdict(list)
+
+
+def _admin_configuration_error() -> str:
+    if not ADMIN_USERNAME or not ADMIN_PASSWORD:
+        return "Set ADMIN_USERNAME and ADMIN_PASSWORD in gateway/.env."
+    if len(ADMIN_PASSWORD) < 16:
+        return "ADMIN_PASSWORD must be at least 16 characters long."
+    if len(ADMIN_SESSION_SECRET) < 32:
+        return "Set ADMIN_SESSION_SECRET to a random value with at least 32 characters."
+    return ""
+
+
+def _admin_auth_configured() -> bool:
+    return not _admin_configuration_error()
+
+
+def _has_admin_session(request: Request) -> bool:
+    token = request.cookies.get(ADMIN_SESSION_COOKIE, "")
+    if not token or not _admin_auth_configured():
+        return False
+
+    try:
+        encoded_payload, encoded_signature = token.split(".", maxsplit=1)
+        payload = base64.urlsafe_b64decode(encoded_payload + "=" * (-len(encoded_payload) % 4))
+        signature = base64.urlsafe_b64decode(encoded_signature + "=" * (-len(encoded_signature) % 4))
+        expires_text, nonce = payload.decode("ascii").split(".", maxsplit=1)
+        expires_at = int(expires_text)
+    except (ValueError, UnicodeDecodeError):
+        return False
+    if not nonce or expires_at <= time.time():
+        return False
+
+    expected_signature = hmac.new(
+        ADMIN_SESSION_SECRET.encode("utf-8"),
+        payload,
+        hashlib.sha256,
+    ).digest()
+    return hmac.compare_digest(signature, expected_signature)
+
+
+def _create_admin_session() -> str:
+    expires_at = int(time.time()) + ADMIN_SESSION_TTL_SECONDS
+    payload = f"{expires_at}.{secrets.token_urlsafe(16)}".encode("ascii")
+    signature = hmac.new(
+        ADMIN_SESSION_SECRET.encode("utf-8"),
+        payload,
+        hashlib.sha256,
+    ).digest()
+    encoded_payload = base64.urlsafe_b64encode(payload).rstrip(b"=").decode("ascii")
+    encoded_signature = base64.urlsafe_b64encode(signature).rstrip(b"=").decode("ascii")
+    return f"{encoded_payload}.{encoded_signature}"
+
+
+def _login_attempts_for(client_ip: str) -> list[float]:
+    now = time.time()
+    attempts = [
+        timestamp for timestamp in _admin_login_failures.get(client_ip, [])
+        if now - timestamp < ADMIN_LOGIN_WINDOW_SECONDS
+    ]
+    _admin_login_failures[client_ip] = attempts
+    return attempts
 
 # Build the genai Client (direct SDK — no ADK wrapper)
 # Use v1alpha for preview/native-audio models (required for bidiGenerateContent)
@@ -301,6 +373,11 @@ app.add_middleware(
 )
 
 
+class AdminLoginRequest(BaseModel):
+    username: str = Field(min_length=1, max_length=128)
+    password: str = Field(min_length=1, max_length=256)
+
+
 # ========================================
 # Error Handler Middleware
 # ========================================
@@ -322,6 +399,27 @@ async def error_handler_middleware(request: Request, call_next):
                 {"error": "Rate limit exceeded", "request_id": request_id},
                 status_code=429,
             )
+
+        path = request.url.path
+        is_dashboard = path == "/dashboard" or path.startswith("/dashboard/")
+        is_admin_api = path.startswith("/api/") and path not in {
+            "/api/health",
+            "/api/auth/status",
+            "/api/auth/login",
+            "/api/auth/logout",
+        } and not re.fullmatch(r"/api/sites/[^/]+/welcome", path)
+        if is_dashboard or is_admin_api:
+            if not _admin_auth_configured():
+                if is_dashboard and request.method in {"GET", "HEAD"}:
+                    return RedirectResponse("/admin/login?setup=required", status_code=303)
+                return JSONResponse(
+                    {"error": _admin_configuration_error()},
+                    status_code=503,
+                )
+            if not _has_admin_session(request):
+                if is_dashboard and request.method in {"GET", "HEAD"}:
+                    return RedirectResponse("/admin/login", status_code=303)
+                return JSONResponse({"error": "Admin authentication required."}, status_code=401)
 
         # Log request
         logger.info(f"[{request_id}] {request.method} {request.url.path} from {client_ip}")
@@ -384,6 +482,80 @@ if dashboard_dir.exists():
 # ========================================
 # REST Endpoints
 # ========================================
+
+@app.get("/admin/login", include_in_schema=False)
+async def admin_login_page():
+    """Serve the public admin sign-in form."""
+    login_path = Path(__file__).parent / "static" / "admin-login.html"
+    if not login_path.is_file():
+        logger.error("Admin login page is missing: %s", login_path)
+        return JSONResponse({"error": "Admin login page is unavailable."}, status_code=500)
+    return FileResponse(login_path, media_type="text/html", headers={"Cache-Control": "no-store"})
+
+
+@app.get("/api/auth/status")
+async def admin_auth_status(request: Request):
+    """Report whether admin credentials are configured and this browser is signed in."""
+    configured = _admin_auth_configured()
+    return {
+        "configured": configured,
+        "authenticated": configured and _has_admin_session(request),
+        "configuration_error": "" if configured else _admin_configuration_error(),
+    }
+
+
+@app.post("/api/auth/login")
+async def admin_login(credentials: AdminLoginRequest, request: Request):
+    """Authenticate the dashboard administrator and issue a server-backed session cookie."""
+    if not _admin_auth_configured():
+        return JSONResponse(
+            {"error": _admin_configuration_error()},
+            status_code=503,
+        )
+
+    client_ip = request.client.host if request.client else "unknown"
+    failures = _login_attempts_for(client_ip)
+    if len(failures) >= ADMIN_LOGIN_MAX_ATTEMPTS:
+        return JSONResponse(
+            {"error": "Too many failed sign-in attempts. Try again in 15 minutes."},
+            status_code=429,
+            headers={"Retry-After": str(ADMIN_LOGIN_WINDOW_SECONDS)},
+        )
+
+    username_matches = secrets.compare_digest(credentials.username, ADMIN_USERNAME)
+    password_matches = secrets.compare_digest(credentials.password, ADMIN_PASSWORD)
+    if not (username_matches and password_matches):
+        failures.append(time.time())
+        logger.warning("Admin login rejected for client %s", client_ip)
+        return JSONResponse({"error": "Invalid username or password."}, status_code=401)
+
+    _admin_login_failures.pop(client_ip, None)
+    token = _create_admin_session()
+    response = JSONResponse({"authenticated": True})
+    response.set_cookie(
+        ADMIN_SESSION_COOKIE,
+        token,
+        max_age=ADMIN_SESSION_TTL_SECONDS,
+        httponly=True,
+        secure=request.url.scheme == "https",
+        samesite="strict",
+        path="/",
+    )
+    return response
+
+
+@app.post("/api/auth/logout")
+async def admin_logout(request: Request):
+    """Clear the current browser's dashboard session cookie."""
+    response = JSONResponse({"authenticated": False})
+    response.delete_cookie(
+        ADMIN_SESSION_COOKIE,
+        httponly=True,
+        secure=request.url.scheme == "https",
+        samesite="strict",
+        path="/",
+    )
+    return response
 
 
 @app.get("/health")

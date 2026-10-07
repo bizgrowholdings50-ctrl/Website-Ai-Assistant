@@ -459,7 +459,16 @@ Returns analytics counters for a site.
 GET /dashboard
 ```
 
-Serves the built-in site owner dashboard (static HTML). Provides a visual interface for managing sites, knowledge base, sessions, and analytics. No authentication required in the MVP.
+Serves the built-in site owner dashboard (static HTML) after admin sign-in. Dashboard files and management API routes require a valid admin session.
+
+| Method | Endpoint | Description |
+|:-------|:---------|:------------|
+| `GET` | `/admin/login` | Admin sign-in page |
+| `GET` | `/api/auth/status` | Reports whether admin credentials are configured and the browser is signed in |
+| `POST` | `/api/auth/login` | Signs in using the configured admin username and password; sets an HTTP-only session cookie |
+| `POST` | `/api/auth/logout` | Clears the current browser's admin session cookie |
+
+Configure `ADMIN_USERNAME`, a unique `ADMIN_PASSWORD` of at least 16 characters, and a random `ADMIN_SESSION_SECRET` of at least 32 characters. The management API fails closed if these are unset. Public health checks and the site welcome endpoint used by the embed remain accessible without an admin session.
 
 ---
 

@@ -11,6 +11,9 @@ export async function api<T = Record<string, unknown>>(
   });
 
   if (!res.ok) {
+    if (res.status === 401 && !path.startsWith('/api/auth/')) {
+      window.location.assign('/admin/login');
+    }
     throw new Error(`API error: ${res.status} ${res.statusText}`);
   }
 

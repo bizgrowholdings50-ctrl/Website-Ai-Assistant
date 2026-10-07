@@ -190,6 +190,11 @@ The agent is instantiated in `gateway/agent/agent.py`:
 | `GEMINI_API_KEY` | ⚠️ | Alternative to `GOOGLE_API_KEY`; if both set, `GOOGLE_API_KEY` takes priority |
 | `GOOGLE_CLOUD_PROJECT` | | GCP project ID (auto-set on Cloud Run) |
 | `PORT` | | Server port (default: `8080` on Cloud Run, `8081` local) |
+| `ADMIN_USERNAME` | ✅ | Username required to sign in to the dashboard |
+| `ADMIN_PASSWORD` | ✅ | Dashboard password; must be at least 16 characters |
+| `ADMIN_SESSION_SECRET` | ✅ | Random secret used to sign dashboard sessions; use at least 32 characters and keep it secret |
+
+The dashboard and its management API fail closed until all three admin variables are configured. For local development, add them to `gateway/.env` and restart the Gateway. For deployments, store the values in a secret manager and provide them to the Gateway as environment variables. The browser session expires after eight hours; use HTTPS in production.
 
 ### Terraform (`infra/terraform.tfvars`)
 

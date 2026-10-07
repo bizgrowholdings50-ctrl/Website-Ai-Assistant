@@ -36,13 +36,16 @@ pip install -r requirements.txt
 Configure your API key:
 
 ```bash
-cp .env.example .env
+cp gateway/.env.example gateway/.env
 ```
 
-Edit `.env` and add your Gemini API key:
+Edit `gateway/.env` and set your Gemini API key and dashboard credentials:
 
 ```env
 GOOGLE_API_KEY=your_gemini_api_key_here
+ADMIN_USERNAME=your_admin_username
+ADMIN_PASSWORD=use_a_unique_password_at_least_16_characters
+ADMIN_SESSION_SECRET=use_a_random_secret_at_least_32_characters
 ```
 
 Start the server:
