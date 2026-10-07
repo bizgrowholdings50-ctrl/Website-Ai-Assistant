@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 380px;
+      max-height: 580px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0A0A0F;
+      color: #F0F0F5;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .header {
+      background: #13131A;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid #2A2A3A;
+    }
+
+    .header canvas {
+      border-radius: 8px;
+      flex-shrink: 0;
+    }
+
+    .header-info { flex: 1; }
+    .header-info h1 { font-size: 15px; font-weight: 600; }
+    .header-info .subtitle {
+      font-size: 11px;
+      color: #8B8BA3;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 2px;
+    }
+
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .status-dot.connected { background: #00E676; }
+    .status-dot.disconnected { background: #FF4757; }
+    .status-dot.listening { background: #00E5CC; animation: blink 1.5s infinite; }
+
+    @keyframes blink {
+      0%, 49%, 100% { opacity: 1; }
+      50%, 99% { opacity: 0.5; }
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 4px;
+    }
+
+    .icon-btn {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: #8B8BA3;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .icon-btn:hover {
+      background: #1A1A24;
+      color: #F0F0F5;
+    }
+
+    .icon-btn.active { color: #FF4D4D; }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      background: #13131A;
+      border-bottom: 1px solid #2A2A3A;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      background: transparent;
+      color: #8B8BA3;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      text-align: center;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+
+    .tab:hover { color: #F0F0F5; }
+    .tab.active {
+      color: #FF4D4D;
+      border-bottom-color: #FF4D4D;
+    }
+
+    /* Panels */
+    .panel { display: none; overflow-y: auto; max-height: 440px; }
+    .panel.active { display: block; }
+
+    /* Chat Panel */
+    .chat-messages {
+      padding: 12px;
+      min-height: 280px;
+      max-height: 340px;
+      overflow-y: auto;
+    }
+
+    .chat-msg {
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .chat-msg .bubble {
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.4;
+      max-width: 85%;
+      word-wrap: break-word;
+    }
+
+    .chat-msg.user .bubble {
+      background: #FF4D4D;
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+
+    .chat-msg.agent .bubble {
+      background: #1A1A24;
+      color: #F0F0F5;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+
+    .chat-msg.system .bubble {
+      background: rgba(255, 184, 0, 0.1);
+      color: #FFB800;
+      font-size: 12px;
+      align-self: center;
+      border-radius: 8px;
+    }
+
+    .chat-msg .time {
+      font-size: 10px;
+      color: #8B8BA3;
+      padding: 0 12px;
+    }
+
+    .chat-msg.user .time { align-self: flex-end; }
+
+    .chat-input-area {
+      display: flex;
+      border-top: 1px solid #2A2A3A;
+      padding: 8px;
+      gap: 8px;
+      align-items: center;
+      background: #13131A;
+    }
+
+    .chat-input-area input {
+      flex: 1;
+      background: #1A1A24;
+      border: 1px solid #2A2A3A;
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: #F0F0F5;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .chat-input-area input:focus {
+      border-color: #FF4D4D;
+    }
+
+    .voice-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: rgba(0, 229, 204, 0.1);
+      border-radius: 6px;
+      font-size: 11px;
+      color: #00E5CC;
+      margin: 8px 12px;
+    }
+
+    .voice-indicator .bars {
+      display: flex;
+      gap: 2px;
+      align-items: flex-end;
+      height: 14px;
+    }
+
+    .voice-indicator .bar {
+      width: 3px;
+      background: #00E5CC;
+      border-radius: 1px;
+      animation: barPulse 0.6s ease-in-out infinite;
+    }
+
+    .voice-indicator .bar:nth-child(1) { height: 4px; animation-delay: 0s; }
+    .voice-indicator .bar:nth-child(2) { height: 8px; animation-delay: 0.1s; }
+    .voice-indicator .bar:nth-child(3) { height: 12px; animation-delay: 0.2s; }
+    .voice-indicator .bar:nth-child(4) { height: 8px; animation-delay: 0.3s; }
+    .voice-indicator .bar:nth-child(5) { height: 4px; animation-delay: 0.4s; }
+
+    @keyframes barPulse {
+      0%, 100% { transform: scaleY(0.5); }
+      50% { transform: scaleY(1); }
+    }
+
+    /* Agent Switch */
+    .agent-switch {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      margin: 8px 12px;
+      background: #1A1A24;
+      border-radius: 10px;
+      border: 1px solid #2A2A3A;
+    }
+
+    .agent-switch .agent-pill {
+      flex: 1;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #8B8BA3;
+    }
+
+    .agent-switch .agent-pill.active {
+      background: #FF4D4D;
+      color: white;
+      border-color: #FF4D4D;
+    }
+
+    .agent-switch .agent-pill:hover:not(.active) {
+      border-color: #2A2A3A;
+      color: #F0F0F5;
+    }
+
+    .agent-switch .divider {
+      width: 1px;
+      height: 20px;
+      background: #2A2A3A;
+    }
+
+    /* Settings Panel */
+    .settings-section {
+      padding: 14px 16px;
+      border-bottom: 1px solid #2A2A3A;
+    }
+
+    .settings-section h3 {
+      font-size: 12px;
+      color: #8B8BA3;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .setting-row:last-child { margin-bottom: 0; }
+
+    .setting-row .label { font-size: 13px; }
+    .setting-row .desc { font-size: 11px; color: #8B8BA3; margin-top: 1px; }
+
+    .toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle .slider {
+      position: absolute; cursor: pointer; inset: 0;
+      background: #2A2A3A; border-radius: 22px; transition: 0.2s;
+    }
+    .toggle .slider:before {
+      content: ''; position: absolute;
+      height: 16px; width: 16px; left: 3px; bottom: 3px;
+      background: white; border-radius: 50%; transition: 0.2s;
+    }
+    .toggle input:checked + .slider { background: #FF4D4D; }
+    .toggle input:checked + .slider:before { transform: translateX(18px); }
+
+    .input-row {
+      margin-bottom: 12px;
+    }
+
+    .input-row label {
+      display: block;
+      font-size: 12px;
+      color: #8B8BA3;
+      margin-bottom: 4px;
+    }
+
+    .input-row input, .input-row select {
+      width: 100%;
+      padding: 8px 10px;
+      background: #1A1A24;
+      border: 1px solid #2A2A3A;
+      border-radius: 6px;
+      color: #F0F0F5;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .input-row input:focus, .input-row select:focus {
+      border-color: #FF4D4D;
+    }
+
+    /* Avatar Design Panel */
+    .avatar-preview {
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+      background: #13131A;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+
+    .avatar-preview canvas {
+      border-radius: 12px;
+    }
+
+    .color-picker-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .color-swatch {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.15s;
+    }
+
+    .color-swatch:hover { transform: scale(1.1); }
+    .color-swatch.active { border-color: white; }
+
+    .color-custom {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      border: 2px dashed #2A2A3A;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #8B8BA3;
+      font-size: 14px;
+    }
+
+    /* Buttons */
+    .btn-row {
+      padding: 12px 16px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+
+    .btn-primary { background: #FF4D4D; color: white; }
+    .btn-primary:hover { background: #FF7A7A; }
+    .btn-danger { background: #FF4757; color: white; }
+    .btn-danger:hover { background: #ff6b78; }
+    .btn-secondary { background: #1A1A24; color: #F0F0F5; border: 1px solid #2A2A3A; }
+    .btn-secondary:hover { border-color: #8B8BA3; }
+
+    /* Footer */
+    .footer {
+      padding: 10px 16px;
+      border-top: 1px solid #2A2A3A;
+      text-align: center;
+      font-size: 10px;
+      color: #8B8BA3;
+      background: #13131A;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <canvas id="popup-avatar" width="36" height="36"></canvas>
+    <div class="header-info">
+      <h1>WebClaw</h1>
+      <div class="subtitle">
+        <span class="status-dot disconnected" id="status-dot"></span>
+        <span id="status-text">Not connected</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" id="btn-settings-gear" title="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" data-panel="chat">Chat</button>
+    <button class="tab" data-panel="avatar">Avatar</button>
+    <button class="tab" data-panel="settings">Settings</button>
+  </div>
+
+  <!-- Chat Panel -->
+  <div class="panel active" id="panel-chat">
+    <!-- Agent Switch -->
+    <div class="agent-switch">
+      <button class="agent-pill active" id="pill-site" data-agent="site">Site Agent</button>
+      <div class="divider"></div>
+      <button class="agent-pill" id="pill-personal" data-agent="personal">My Claw</button>
+    </div>
+
+    <!-- Voice indicator (shown when seamless is active) -->
+    <div class="voice-indicator" id="voice-indicator" style="display:none;">
+      <div class="bars">
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+      </div>
+      <span>Listening... just speak naturally</span>
+    </div>
+
+    <!-- Messages -->
+    <div class="chat-messages" id="chat-messages">
+      <div class="chat-msg system">
+        <div class="bubble">Say something or type below to start chatting with your agent.</div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="chat-input-area">
+      <input type="text" id="chat-input" placeholder="Type a message..." />
+      <button class="icon-btn active" id="btn-send" title="Send">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Avatar Design Panel -->
+  <div class="panel" id="panel-avatar">
+    <div class="settings-section">
+      <h3>Preview</h3>
+      <div class="avatar-preview">
+        <canvas id="avatar-design-preview" width="120" height="120"></canvas>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Body Color</h3>
+      <div class="color-picker-row" id="body-colors">
+        <div class="color-swatch active" style="background:#FF4D4D" data-color="#FF4D4D"></div>
+        <div class="color-swatch" style="background:#9B59B6" data-color="#9B59B6"></div>
+        <div class="color-swatch" style="background:#3498DB" data-color="#3498DB"></div>
+        <div class="color-swatch" style="background:#2ECC71" data-color="#2ECC71"></div>
+        <div class="color-swatch" style="background:#F39C12" data-color="#F39C12"></div>
+        <div class="color-swatch" style="background:#E91E63" data-color="#E91E63"></div>
+        <div class="color-swatch" style="background:#00BCD4" data-color="#00BCD4"></div>
+        <div class="color-swatch" style="background:#FF6B35" data-color="#FF6B35"></div>
+        <div class="color-custom" title="Custom color">
+          <input type="color" id="custom-body-color" value="#FF4D4D" style="opacity:0;position:absolute;width:32px;height:32px;cursor:pointer;">
+          +
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Character Style</h3>
+      <div class="setting-row">
+        <div>
+          <div class="label">Show Limbs</div>
+          <div class="desc">Display arms and legs on the character</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="show-limbs" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="label">Speech Bubbles</div>
+          <div class="desc">Show text bubbles above avatar</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="show-bubbles" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btn-save-avatar">Save Avatar Design</button>
+    </div>
+  </div>
+
+  <!-- Settings Panel -->
+  <div class="panel" id="panel-settings">
+    <div class="settings-section">
+      <h3>Connection</h3>
+      <div class="input-row">
+        <label>Gateway URL</label>
+        <input type="text" id="gateway-url" placeholder="https://gateway.webclaw.dev" />
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Voice</h3>
+      <div class="setting-row">
+        <div>
+          <div class="label">Seamless Voice</div>
+          <div class="desc">Always listening, no push-to-talk</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="seamless-voice" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="label">Auto-activate</div>
+          <div class="desc">Connect on every page</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="auto-activate" />
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="label">Send DOM snapshots</div>
+          <div class="desc">Let agent see page structure</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="send-dom" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Agent Switching</h3>
+      <div class="setting-row">
+        <div>
+          <div class="label">Voice switch</div>
+          <div class="desc">Say "switch agent" to toggle</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="voice-switch" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="label">Default to My Claw</div>
+          <div class="desc">Use personal agent by default on all sites</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="default-personal" />
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="btn-row" style="display:flex;gap:8px;">
+      <button class="btn btn-secondary" id="btn-open-settings" style="flex:1;">Open Full Settings</button>
+      <button class="btn btn-primary" id="btn-save-settings" style="flex:1;">Save</button>
+    </div>
+  </div>
+
+  <div class="footer">WebClaw v0.3.0 &middot; Your Personal Live Agent</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

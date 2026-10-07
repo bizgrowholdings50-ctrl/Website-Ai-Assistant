@@ -1,0 +1,26 @@
+flowchart TB
+    subgraph browser ["User's Browser"]
+        direction LR
+        embed["Embed Script\n(Site Agent)\nScript Tag"]
+        ext["Chrome Extension\n(Personal Agent)\nWorks on any site"]
+        site["Target Website\nDOM + Content"]
+    end
+
+    subgraph gateway ["WebClaw Gateway: Cloud Run"]
+        direction TB
+        ws["WebSocket Server\nFastAPI"]
+        agent["ADK Agent Runtime\nGemini Live API"]
+        ctx["Context Broker\nKnowledge + Permissions"]
+        tools["DOM Action Engine\nclick · type · scroll\nnavigate · highlight"]
+        session["Session Store\nFirestore"]
+    end
+
+    embed <-->|"WebSocket\naudio + text + DOM"| ws
+    ext <-->|"WebSocket\naudio + text + DOM"| ws
+    embed <--> site
+    ext <--> site
+    ws <--> agent
+    agent <--> ctx
+    agent <--> tools
+    agent <--> session
+    agent <-->|"Bidirectional\nAudio Streaming"| gemini["Gemini Live API\n(Native Audio)"]

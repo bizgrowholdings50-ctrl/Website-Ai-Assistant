@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+coverage.xml
+
+# Node
+node_modules/
+embed/dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*
+!.env.example
+!.env.*.example
+!**/.env.example
+!**/.env.*.example
+
+# Local databases and runtime data
+*.sqlite
+*.sqlite3
+*.db
+*.log
+
+# Credentials and private keys
+credentials.json
+service-account*.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+*.egg
+*.whl
+
+# Dashboard source is committed (static HTML, no build step)
+!dashboard/dist/
+dashboard/package-lock.json
+
+extension.crx
+extension.pem
+
+prompt/
+keys/

@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="A multi-section sample site for testing the WebClaw chat widget.">
+    <title>Northstar Studio | WebClaw Test Site</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #182230;
+        background: #f4f7fb;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        --ink: #182230;
+        --muted: #617084;
+        --line: #e1e8f0;
+        --blue: #315bea;
+        --blue-dark: #2346c2;
+        --surface: #fff;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; min-width: 320px; }
+      button, input, textarea { font: inherit; }
+      button { cursor: pointer; }
+      .shell { width: min(1100px, calc(100% - 40px)); margin: 0 auto; }
+      .topbar { background: var(--surface); border-bottom: 1px solid var(--line); }
+      .topbar-inner { min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+      .brand { color: var(--ink); font-size: 1.15rem; font-weight: 800; letter-spacing: -.04em; text-decoration: none; }
+      .brand span { color: var(--blue); }
+      .nav { display: flex; gap: 8px; flex-wrap: wrap; }
+      .nav button { padding: 10px 15px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font-weight: 650; }
+      .nav button:hover, .nav button[aria-selected="true"] { background: #edf1ff; color: var(--blue-dark); }
+      main { padding: 40px 0 72px; }
+      .page-section[hidden] { display: none; }
+      .eyebrow { margin: 0 0 12px; color: var(--blue); font-size: .78rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+      h1, h2, h3, p { margin-top: 0; }
+      h1 { max-width: 680px; margin-bottom: 18px; font-size: clamp(2.4rem, 6vw, 4.2rem); line-height: 1.04; letter-spacing: -.055em; }
+      h2 { margin-bottom: 12px; font-size: clamp(1.8rem, 4vw, 2.5rem); letter-spacing: -.04em; }
+      h3 { margin-bottom: 8px; }
+      p { color: var(--muted); line-height: 1.7; }
+      .hero { padding: 54px; border: 1px solid #e3eafe; border-radius: 24px; background: linear-gradient(125deg, #fff 15%, #eef2ff 100%); }
+      .hero p { max-width: 620px; font-size: 1.08rem; }
+      .button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 18px; border: 0; border-radius: 9px; background: var(--blue); color: #fff; font-weight: 700; text-decoration: none; }
+      .button:hover { background: var(--blue-dark); }
+      .section-heading { margin: 42px 0 18px; }
+      .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+      .card { padding: 23px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+      .card p { margin-bottom: 0; }
+      .card-label { margin-bottom: 12px; color: var(--blue); font-size: .76rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+      .panel { padding: 30px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
+      .panel-intro { max-width: 650px; margin-bottom: 25px; }
+      .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+      table { width: 100%; border-collapse: collapse; text-align: left; }
+      th, td { padding: 16px 18px; border-bottom: 1px solid var(--line); }
+      th { background: #f8faff; color: #46546a; font-size: .82rem; }
+      tr:last-child td { border-bottom: 0; }
+      td { color: #334155; }
+      .tag { display: inline-block; padding: 5px 9px; border-radius: 999px; background: #e9f8ef; color: #247344; font-size: .78rem; font-weight: 700; }
+      .contact-layout { display: grid; grid-template-columns: .8fr 1.2fr; gap: 24px; align-items: start; }
+      .contact-note { padding: 28px; border-radius: 16px; background: #192744; color: #fff; }
+      .contact-note p { color: #c5d0e3; }
+      .contact-note a { color: #fff; }
+      .form { display: grid; gap: 17px; }
+      .field { display: grid; gap: 7px; }
+      label { color: #344258; font-size: .9rem; font-weight: 700; }
+      input, textarea { width: 100%; padding: 12px 13px; border: 1px solid #ced7e4; border-radius: 9px; background: #fff; color: var(--ink); }
+      input:focus, textarea:focus { border-color: var(--blue); outline: 3px solid #315bea22; }
+      textarea { min-height: 140px; resize: vertical; }
+      .form-status { min-height: 1.5em; margin: 0; color: #247344; font-weight: 650; }
+      footer { padding: 24px 0; border-top: 1px solid var(--line); background: var(--surface); color: var(--muted); font-size: .9rem; }
+      @media (max-width: 720px) {
+        .topbar-inner { align-items: flex-start; flex-direction: column; justify-content: center; padding: 17px 0; gap: 10px; }
+        .hero { padding: 34px 25px; }
+        .grid, .contact-layout { grid-template-columns: 1fr; }
+        main { padding-top: 25px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="shell topbar-inner">
+        <a class="brand" href="#home" aria-label="Northstar Studio home"><span>Northstar</span> Studio</a>
+        <nav class="nav" role="tablist" aria-label="Main navigation">
+          <button id="tab-home" type="button" role="tab" aria-controls="home" aria-selected="true" data-page="home">Home</button>
+          <button id="tab-services" type="button" role="tab" aria-controls="services" aria-selected="false" data-page="services" tabindex="-1">Services</button>
+          <button id="tab-contact" type="button" role="tab" aria-controls="contact" aria-selected="false" data-page="contact" tabindex="-1">Contact Us</button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section class="page-section" id="home" role="tabpanel" aria-labelledby="tab-home">
+        <div class="hero">
+          <p class="eyebrow">Thoughtful digital experiences</p>
+          <h1>Make your next big idea feel simple.</h1>
+          <p>Northstar Studio helps growing teams design clear, useful digital products. Explore our sample services, browse project details, or send our team a message.</p>
+          <button class="button" type="button" data-go="services">Explore our services</button>
+        </div>
+        <div class="section-heading">
+          <p class="eyebrow">A few things about us</p>
+          <h2>Small team, meaningful work</h2>
+        </div>
+        <div class="grid">
+          <article class="card">
+            <p class="card-label">Our approach</p>
+            <h3>Clarity before complexity</h3>
+            <p>We turn ambitious goals into focused, approachable experiences people enjoy using.</p>
+          </article>
+          <article class="card">
+            <p class="card-label">Our team</p>
+            <h3>Four curious specialists</h3>
+            <p>Designers and developers work together from the first sketch through launch.</p>
+          </article>
+          <article class="card">
+            <p class="card-label">Our location</p>
+            <h3>Based in Portland, Oregon</h3>
+            <p>We collaborate with thoughtful businesses across the country and around the world.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="page-section" id="services" role="tabpanel" aria-labelledby="tab-services" hidden>
+        <p class="eyebrow">What we do</p>
+        <h2>Services built around your goals</h2>
+        <p class="panel-intro">Choose a focused engagement or combine services for support throughout your product journey.</p>
+        <div class="grid">
+          <article class="card">
+            <p class="card-label">01 / Discover</p>
+            <h3>Product strategy</h3>
+            <p>Customer interviews, opportunity mapping, and a practical roadmap for your next release.</p>
+          </article>
+          <article class="card">
+            <p class="card-label">02 / Design</p>
+            <h3>Experience design</h3>
+            <p>Accessible user flows, wireframes, and polished interface designs for web and mobile.</p>
+          </article>
+          <article class="card">
+            <p class="card-label">03 / Deliver</p>
+            <h3>Web development</h3>
+            <p>Fast, responsive websites and application interfaces built with your team in mind.</p>
+          </article>
+        </div>
+        <div class="section-heading">
+          <p class="eyebrow">Recent work</p>
+          <h2>Selected projects</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th scope="col">Project</th><th scope="col">Service</th><th scope="col">Completed</th><th scope="col">Status</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Fieldnote</td><td>Product design</td><td>March 2026</td><td><span class="tag">Launched</span></td></tr>
+              <tr><td>Goodwell Market</td><td>Web development</td><td>January 2026</td><td><span class="tag">Launched</span></td></tr>
+              <tr><td>Orbit Health</td><td>Product strategy</td><td>November 2025</td><td><span class="tag">In progress</span></td></tr>
+              <tr><td>Juniper Learning</td><td>Experience design</td><td>September 2025</td><td><span class="tag">Launched</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="page-section" id="contact" role="tabpanel" aria-labelledby="tab-contact" hidden>
+        <p class="eyebrow">Start a conversation</p>
+        <h2>Tell us what you have in mind</h2>
+        <p class="panel-intro">Share a little about your project and our studio team will be in touch.</p>
+        <div class="contact-layout">
+          <aside class="contact-note">
+            <h3>Contact details</h3>
+            <p>We typically reply within two business days.</p>
+            <p><strong>Email:</strong><br><a href="mailto:hello@northstar.example">hello@northstar.example</a></p>
+            <p><strong>Office:</strong><br>214 Alder Street, Portland, OR 97204</p>
+            <p><strong>Hours:</strong><br>Monday-Friday, 9:00 AM-5:00 PM Pacific</p>
+          </aside>
+          <div class="panel">
+            <form class="form" id="contact-form">
+              <div class="field">
+                <label for="name">Name</label>
+                <input id="name" name="name" type="text" autocomplete="name" placeholder="Your name" required>
+              </div>
+              <div class="field">
+                <label for="email">Email</label>
+                <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>
+              </div>
+              <div class="field">
+                <label for="message">Message</label>
+                <textarea id="message" name="message" placeholder="How can we help?" required></textarea>
+              </div>
+              <button class="button" type="submit">Send message</button>
+              <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="shell">Northstar Studio · Sample website for WebClaw widget testing · 2026</div>
+    </footer>
+
+    <script>
+      const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+      const panels = Array.from(document.querySelectorAll('[role="tabpanel"]'));
+
+      function showPage(pageId) {
+        tabs.forEach((tab) => {
+          const isSelected = tab.dataset.page === pageId;
+          tab.setAttribute('aria-selected', String(isSelected));
+          tab.tabIndex = isSelected ? 0 : -1;
+        });
+        panels.forEach((panel) => {
+          panel.hidden = panel.id !== pageId;
+        });
+      }
+
+      tabs.forEach((tab) => {
+        tab.addEventListener('click', () => showPage(tab.dataset.page));
+        tab.addEventListener('keydown', (event) => {
+          if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+          event.preventDefault();
+          const direction = event.key === 'ArrowRight' ? 1 : -1;
+          const nextIndex = (tabs.indexOf(tab) + direction + tabs.length) % tabs.length;
+          tabs[nextIndex].focus();
+          showPage(tabs[nextIndex].dataset.page);
+        });
+      });
+
+      document.querySelector('[data-go="services"]').addEventListener('click', () => {
+        showPage('services');
+        document.querySelector('#tab-services').focus();
+      });
+
+      document.querySelector('.brand').addEventListener('click', (event) => {
+        event.preventDefault();
+        showPage('home');
+        document.querySelector('#tab-home').focus();
+      });
+
+      document.querySelector('#contact-form').addEventListener('submit', (event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        if (!form.reportValidity()) return;
+        const name = new FormData(form).get('name');
+        document.querySelector('#form-status').textContent = `Thanks, ${name}! Your message has been recorded for this demo.`;
+      });
+    </script>
+
+    <script
+      src="http://127.0.0.1:8081/embed.js"
+      data-gateway="http://127.0.0.1:8081"
+      async>
+    </script>
+  </body>
+</html>

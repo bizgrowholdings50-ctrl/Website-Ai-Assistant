@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Avatar Test</title>
+  <style>
+    body {
+      background: #f5f5f5;
+      font-family: -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px;
+      gap: 24px;
+    }
+    h1 { font-size: 18px; color: #333; }
+    .row {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+    }
+    .preview {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .preview span { font-size: 12px; color: #888; }
+    canvas {
+      border-radius: 50%;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+    .large-preview canvas {
+      border-radius: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>WebClaw Avatar Character Test</h1>
+
+  <div class="row">
+    <div class="preview">
+      <span>FAB size (64px render)</span>
+      <canvas id="c1" width="128" height="128" style="width:64px;height:64px;"></canvas>
+    </div>
+    <div class="preview">
+      <span>Header (36px render)</span>
+      <canvas id="c2" width="72" height="72" style="width:36px;height:36px;"></canvas>
+    </div>
+    <div class="preview">
+      <span>Large (128px actual)</span>
+      <canvas id="c3" width="128" height="128"></canvas>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="preview large-preview">
+      <span>Full character with limbs (200px)</span>
+      <canvas id="c4" width="200" height="200"></canvas>
+    </div>
+    <div class="preview large-preview">
+      <span>Navy color (#0f172a)</span>
+      <canvas id="c5" width="200" height="200"></canvas>
+    </div>
+    <div class="preview large-preview">
+      <span>Purple (#9B59B6)</span>
+      <canvas id="c6" width="200" height="200"></canvas>
+    </div>
+  </div>
+
+  <script src="../embed/dist/webclaw.js"></script>
+  <script>
+    // The Avatar class is bundled inside the IIFE. Let's draw manually using the same technique.
+    function drawAvatar(canvasId, opts) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      const s = canvas.width;
+      const color = opts.color || '#FF4D4D';
+      const showLimbs = opts.showLimbs || false;
+
+      function hexToRgb(hex) {
+        const num = parseInt(hex.replace('#', ''), 16);
+        return [(num >> 16) & 0xFF, (num >> 8) & 0xFF, num & 0xFF];
+      }
+      function darken(hex, amt) {
+        const [r, g, b] = hexToRgb(hex);
+        return `rgb(${Math.max(0, r - Math.round(255*amt))},${Math.max(0, g - Math.round(255*amt))},${Math.max(0, b - Math.round(255*amt))})`;
+      }
+      function lighten(hex, amt) {
+        const [r, g, b] = hexToRgb(hex);
+        return `rgb(${Math.min(255, r + Math.round(255*amt))},${Math.min(255, g + Math.round(255*amt))},${Math.min(255, b + Math.round(255*amt))})`;
+      }
+
+      let mouthOpen = 0;
+      let blinkTimer = 0;
+      let isBlinking = false;
+      let pulsePhase = 0;
+      let bounceY = 0;
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const now = performance.now();
+        ctx.clearRect(0, 0, s, s);
+
+        blinkTimer++;
+        if (!isBlinking && Math.random() < 0.005) { isBlinking = true; blinkTimer = 0; }
+        if (isBlinking && blinkTimer > 8) isBlinking = false;
+        pulsePhase += 0.05;
+        bounceY = Math.sin(now * 0.002) * (s * 0.015);
+
+        // Mouth movement
+        mouthOpen = Math.max(0, Math.sin(now * 0.008) * 0.3 + 0.1);
+
+        // Circular background
+        const bgGrad = ctx.createRadialGradient(s/2, s/2, 0, s/2, s/2, s/2);
+        bgGrad.addColorStop(0, darken(color, 0.25));
+        bgGrad.addColorStop(0.85, darken(color, 0.35));
+        bgGrad.addColorStop(1, darken(color, 0.45));
+        ctx.beginPath();
+        ctx.arc(s/2, s/2, s/2, 0, Math.PI * 2);
+        ctx.fillStyle = bgGrad;
+        ctx.fill();
+
+        const cx = s / 2;
+        const cy = (showLimbs ? s * 0.38 : s * 0.48) + bounceY;
+        const bh = showLimbs ? s * 0.45 : s * 0.55;
+        const bw = bh * 0.7;
+
+        // Limbs behind body
+        if (showLimbs) {
+          const limbColor = '#3D2B1F';
+          const lw = Math.max(1.5, bw * 0.06);
+          ctx.strokeStyle = limbColor;
+          ctx.lineWidth = lw;
+          ctx.lineCap = 'round';
+
+          const bodyBottom = cy + bh * 0.35;
+          const bodyLeft = cx - bw * 0.42;
+          const bodyRight = cx + bw * 0.42;
+          const armY = cy + bh * 0.05;
+
+          // Left arm
+          ctx.beginPath();
+          ctx.moveTo(bodyLeft, armY);
+          ctx.quadraticCurveTo(bodyLeft - bw * 0.2, armY + bh * 0.15, bodyLeft - bw * 0.1, armY + bh * 0.25);
+          ctx.stroke();
+
+          // Right arm (hand on hip)
+          ctx.beginPath();
+          ctx.moveTo(bodyRight, armY);
+          ctx.quadraticCurveTo(bodyRight + bw * 0.25, armY + bh * 0.08, bodyRight + bw * 0.12, bodyBottom - bh * 0.05);
+          ctx.stroke();
+
+          // Legs
+          const legY = bodyBottom + bh * 0.02;
+          const legLen = bh * 0.28;
+          ctx.beginPath();
+          ctx.moveTo(cx - bw * 0.15, legY);
+          ctx.lineTo(cx - bw * 0.2, legY + legLen);
+          ctx.lineTo(cx - bw * 0.1, legY + legLen);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(cx + bw * 0.15, legY);
+          ctx.lineTo(cx + bw * 0.2, legY + legLen);
+          ctx.lineTo(cx + bw * 0.3, legY + legLen);
+          ctx.stroke();
+        }
+
+        // Body teardrop
+        const top = cy - bh * 0.45;
+        const bottom = cy + bh * 0.37;
+        const baseR = bw * 0.48;
+
+        ctx.beginPath();
+        ctx.moveTo(cx, top);
+        ctx.bezierCurveTo(cx + bw * 0.12, top + bh * 0.12, cx + baseR + bw * 0.06, cy - bh * 0.04, cx + baseR, bottom - bh * 0.06);
+        ctx.bezierCurveTo(cx + baseR * 0.8, bottom + bh * 0.015, cx + baseR * 0.3, bottom + bh * 0.03, cx, bottom + bh * 0.02);
+        ctx.bezierCurveTo(cx - baseR * 0.3, bottom + bh * 0.03, cx - baseR * 0.8, bottom + bh * 0.015, cx - baseR, bottom - bh * 0.06);
+        ctx.bezierCurveTo(cx - baseR - bw * 0.06, cy - bh * 0.04, cx - bw * 0.12, top + bh * 0.12, cx, top);
+        ctx.closePath();
+
+        const grad = ctx.createLinearGradient(cx, top, cx, bottom);
+        grad.addColorStop(0, lighten(color, 0.15));
+        grad.addColorStop(0.5, color);
+        grad.addColorStop(1, darken(color, 0.15));
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // Highlight
+        ctx.save();
+        ctx.clip();
+        const hlGrad = ctx.createRadialGradient(cx - bw * 0.15, cy - bh * 0.2, 0, cx - bw * 0.15, cy - bh * 0.2, bw * 0.5);
+        hlGrad.addColorStop(0, 'rgba(255,255,255,0.22)');
+        hlGrad.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = hlGrad;
+        ctx.fillRect(0, 0, s, s);
+        ctx.restore();
+
+        // Eyes
+        const eyeY = cy + bh * 0.01;
+        const eyeSpacing = bw * 0.22;
+        const eyeR = bw * 0.12;
+        const eyeH = isBlinking ? eyeR * 0.12 : eyeR;
+
+        ctx.fillStyle = 'white';
+        ctx.beginPath(); ctx.ellipse(cx - eyeSpacing, eyeY, eyeR, eyeH, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(cx + eyeSpacing, eyeY, eyeR, eyeH, 0, 0, Math.PI * 2); ctx.fill();
+
+        if (!isBlinking) {
+          const px = Math.sin(now * 0.001) * eyeR * 0.25;
+          ctx.fillStyle = '#1a1a2e';
+          ctx.beginPath(); ctx.arc(cx - eyeSpacing + px, eyeY, eyeR * 0.5, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(cx + eyeSpacing + px, eyeY, eyeR * 0.5, 0, Math.PI * 2); ctx.fill();
+
+          ctx.fillStyle = 'rgba(255,255,255,0.8)';
+          ctx.beginPath(); ctx.arc(cx - eyeSpacing + px + eyeR * 0.2, eyeY - eyeR * 0.2, eyeR * 0.18, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(cx + eyeSpacing + px + eyeR * 0.2, eyeY - eyeR * 0.2, eyeR * 0.18, 0, Math.PI * 2); ctx.fill();
+        }
+
+        // Mouth
+        const mouthY = cy + bh * 0.12;
+        const mouthW = bw * 0.18;
+        const mO = mouthOpen * bh * 0.1;
+
+        if (mO > 1.5) {
+          ctx.fillStyle = darken(color, 0.35);
+          ctx.beginPath();
+          ctx.ellipse(cx, mouthY, mouthW, Math.max(mO, 2), 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.beginPath();
+          ctx.arc(cx, mouthY - bh * 0.015, mouthW, 0.15, Math.PI - 0.15);
+          ctx.strokeStyle = darken(color, 0.3);
+          ctx.lineWidth = Math.max(1.5, bw * 0.03);
+          ctx.lineCap = 'round';
+          ctx.stroke();
+        }
+
+        // Cheeks
+        const ba = 0.1 + Math.sin(pulsePhase * 0.5) * 0.04;
+        ctx.fillStyle = `rgba(255,150,150,${ba})`;
+        const br = bw * 0.08;
+        ctx.beginPath(); ctx.ellipse(cx - eyeSpacing - bw * 0.04, mouthY - bh * 0.01, br, br * 0.7, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(cx + eyeSpacing + bw * 0.04, mouthY - bh * 0.01, br, br * 0.7, 0, 0, Math.PI * 2); ctx.fill();
+      }
+
+      animate();
+    }
+
+    // Render all test avatars
+    drawAvatar('c1', { color: '#FF4D4D' });
+    drawAvatar('c2', { color: '#FF4D4D' });
+    drawAvatar('c3', { color: '#FF4D4D' });
+    drawAvatar('c4', { color: '#FF4D4D', showLimbs: true });
+    drawAvatar('c5', { color: '#0f172a', showLimbs: true });
+    drawAvatar('c6', { color: '#9B59B6', showLimbs: true });
+  </script>
+</body>
+</html>

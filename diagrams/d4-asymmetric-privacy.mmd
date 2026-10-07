@@ -1,0 +1,26 @@
+flowchart LR
+    subgraph userSide ["User's Context (Private)"]
+        prefs["Preferences"]
+        history["Browsing History"]
+        personal["Personal Data"]
+    end
+
+    subgraph siteSide ["Site's Context (Shared)"]
+        kb["Knowledge Base"]
+        faq["FAQs & Docs"]
+        actions["Allowed Actions"]
+        persona["Brand Persona"]
+    end
+
+    subgraph agentCtx ["Agent's Working Context"]
+        merged["Merged Context\n(User prefs + Site KB)"]
+    end
+
+    prefs -->|"Private channel"| merged
+    history -->|"Private channel"| merged
+    personal -.->|"BLOCKED"| siteSide
+
+    kb -->|"Public channel"| merged
+    faq -->|"Public channel"| merged
+    actions -->|"Public channel"| merged
+    persona -->|"Public channel"| merged

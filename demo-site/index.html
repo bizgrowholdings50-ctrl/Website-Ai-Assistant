@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TechByte Store - Demo</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon-32.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --navy: #0f172a;
+      --navy-light: #1e293b;
+      --accent: #e11d48;
+      --accent-hover: #be123c;
+      --surface: #ffffff;
+      --surface-alt: #f8fafc;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --radius: 8px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: var(--text);
+      background: var(--surface);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Navigation ── */
+    .site-nav {
+      background: var(--navy);
+      padding: 0 clamp(16px, 4vw, 48px);
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .site-nav .logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+    .site-nav .logo span { color: #997819; }
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+    .nav-links a:hover { color: #fff; }
+    .cart-btn {
+      background: transparent;
+      border: 1px solid #334155;
+      color: #cbd5e1;
+      padding: 8px 16px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .cart-btn:hover { border-color: #64748b; color: #fff; }
+
+    /* ── Hero ── */
+    .hero {
+      background: var(--navy);
+      padding: 96px clamp(16px, 4vw, 48px) 112px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 120px;
+      background: linear-gradient(to top, var(--surface), transparent);
+    }
+    .hero h1 {
+      font-size: clamp(32px, 5vw, 56px);
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .hero p {
+      font-size: 17px;
+      color: #94a3b8;
+      max-width: 520px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+    }
+    .hero-actions { display: flex; gap: 12px; justify-content: center; }
+    .btn-hero {
+      padding: 12px 28px;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: transform 0.15s, box-shadow 0.15s;
+      border: none;
+    }
+    .btn-hero:hover { transform: translateY(-1px); }
+    .btn-hero-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-hero-primary:hover { box-shadow: 0 4px 16px rgba(225,29,72,0.3); }
+    .btn-hero-secondary {
+      background: transparent;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+    }
+    .btn-hero-secondary:hover { border-color: #64748b; color: #fff; }
+
+    /* ── Section layout ── */
+    .section {
+      padding: 80px clamp(16px, 4vw, 48px);
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .section-header {
+      margin-bottom: 48px;
+    }
+    .section-header h2 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    .section-header p {
+      color: var(--text-muted);
+      font-size: 15px;
+    }
+
+    /* ── Product grid ── */
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .product-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .product-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+    .product-img {
+      width: 100%;
+      height: 220px;
+      background: var(--surface-alt);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .product-img svg {
+      width: 64px;
+      height: 64px;
+      color: #94a3b8;
+    }
+    .product-badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.02em;
+    }
+    .product-body {
+      padding: 20px;
+    }
+    .product-category {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+    .product-body h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      line-height: 1.3;
+    }
+    .product-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+    .product-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .product-price {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .product-price .currency {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+    .btn-add {
+      background: var(--navy);
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+    .btn-add:hover { background: var(--navy-light); }
+    .btn-add.added {
+      background: #059669;
+      pointer-events: none;
+    }
+
+    /* ── Features ── */
+    .features-section {
+      background: var(--surface-alt);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+    }
+    .feature-item {
+      text-align: center;
+    }
+    .feature-icon-wrap {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .feature-icon-wrap svg {
+      width: 22px;
+      height: 22px;
+      color: var(--navy);
+    }
+    .feature-item h4 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .feature-item p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* ── Contact ── */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 64px;
+      align-items: start;
+    }
+    .contact-info h3 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .contact-info p {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .contact-detail {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+    .contact-detail svg {
+      width: 18px;
+      height: 18px;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .contact-form {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+    .field input,
+    .field textarea,
+    .field select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-family: inherit;
+      background: var(--surface);
+      color: var(--text);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .field input:focus,
+    .field textarea:focus,
+    .field select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(225,29,72,0.08);
+    }
+    .field textarea { min-height: 100px; resize: vertical; }
+    .btn-submit {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 12px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+    .btn-submit:hover { background: var(--accent-hover); }
+
+    /* ── FAQ ── */
+    .faq-list { max-width: 700px; }
+    .faq-item {
+      border-bottom: 1px solid var(--border);
+    }
+    .faq-item:first-child { border-top: 1px solid var(--border); }
+    .faq-item summary {
+      padding: 20px 0;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 15px;
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .faq-item summary::-webkit-details-marker { display: none; }
+    .faq-item summary::after {
+      content: '+';
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--text-muted);
+      transition: transform 0.2s;
+    }
+    .faq-item[open] summary::after {
+      content: '\2212';
+    }
+    .faq-answer {
+      padding: 0 0 20px;
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ── Toast ── */
+    .toast-msg {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--navy);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      opacity: 0;
+      transition: transform 0.3s, opacity 0.3s;
+      z-index: 9999;
+      pointer-events: none;
+    }
+    .toast-msg.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* ── Footer ── */
+    .site-footer {
+      background: var(--navy);
+      color: #64748b;
+      padding: 40px clamp(16px, 4vw, 48px);
+      text-align: center;
+      font-size: 13px;
+    }
+    .site-footer a { color: var(--accent); text-decoration: none; }
+    .site-footer a:hover { text-decoration: underline; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .features-grid { grid-template-columns: 1fr; gap: 32px; }
+      .contact-grid { grid-template-columns: 1fr; gap: 32px; }
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="logo">BizGrow<span>&nbsp;Holdings</span></div>
+  <ul class="nav-links">
+    <li><a href="#products">Products</a></li>
+    <li><a href="#features">Why Us</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+  <button class="cart-btn" id="cart-btn">Cart (0)</button>
+</nav>
+
+<section class="hero">
+  <h1>Premium tech gear,<br>no markup.</h1>
+  <p>Hand-picked peripherals and accessories for people who care about their setup. Free shipping on orders over $50.</p>
+  <div class="hero-actions">
+    <button class="btn-hero btn-hero-primary" onclick="document.getElementById('products').scrollIntoView({behavior:'smooth'})">Browse products</button>
+    <button class="btn-hero btn-hero-secondary" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">Get in touch</button>
+  </div>
+</section>
+
+<div class="section" id="products">
+  <div class="section-header">
+    <h2>Featured products</h2>
+    <p>Our most popular picks this month.</p>
+  </div>
+
+  <div class="products-grid">
+    <div class="product-card">
+      <div class="product-img">
+        <div class="product-badge">Best Seller</div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+      </div>
+      <div class="product-body">
+        <div class="product-category">Audio</div>
+        <h3>ProSound Wireless Headphones</h3>
+        <p class="product-desc">Active noise cancellation with 30-hour battery life and premium comfort fit for all-day listening.</p>
+        <div class="product-footer">
+          <div class="product-price"><span class="currency">$</span>79.99</div>
+          <button class="btn-add" data-product="headphones" data-price="79.99">Add to cart</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <div class="product-img">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M6 16h12"/></svg>
+      </div>
+      <div class="product-body">
+        <div class="product-category">Input</div>
+        <h3>MechKey Pro Keyboard</h3>
+        <p class="product-desc">Mechanical switches with per-key RGB, wireless and USB-C, hot-swappable design.</p>
+        <div class="product-footer">
+          <div class="product-price"><span class="currency">$</span>129.99</div>
+          <button class="btn-add" data-product="keyboard" data-price="129.99">Add to cart</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <div class="product-img">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 19v-7a6 6 0 0 1 12 0v7"/><path d="M6 19h12"/><circle cx="12" cy="6" r="2"/></svg>
+      </div>
+      <div class="product-body">
+        <div class="product-category">Input</div>
+        <h3>SwiftClick Gaming Mouse</h3>
+        <p class="product-desc">16,000 DPI sensor, ergonomic shape, 8 programmable buttons, 70-hour battery.</p>
+        <div class="product-footer">
+          <div class="product-price"><span class="currency">$</span>49.99</div>
+          <button class="btn-add" data-product="mouse" data-price="49.99">Add to cart</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <div class="product-img">
+        <div class="product-badge">New</div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+      </div>
+      <div class="product-body">
+        <div class="product-category">Power</div>
+        <h3>PowerBank Ultra 20K</h3>
+        <p class="product-desc">20,000mAh capacity with USB-C PD 65W fast charging, dual output ports.</p>
+        <div class="product-footer">
+          <div class="product-price"><span class="currency">$</span>39.99</div>
+          <button class="btn-add" data-product="powerbank" data-price="39.99">Add to cart</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <div class="product-img">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+      </div>
+      <div class="product-body">
+        <div class="product-category">Audio</div>
+        <h3>ClearVoice USB Microphone</h3>
+        <p class="product-desc">Studio-quality cardioid condenser with zero-latency monitoring and mute toggle.</p>
+        <div class="product-footer">
+          <div class="product-price"><span class="currency">$</span>89.99</div>
+          <button class="btn-add" data-product="microphone" data-price="89.99">Add to cart</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <div class="product-img">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>
+      </div>
+      <div class="product-body">
+        <div class="product-category">Lighting</div>
+        <h3>SmartGlow LED Strip 5m</h3>
+        <p class="product-desc">WiFi-enabled with 16 million colors, music sync, app and voice control.</p>
+        <div class="product-footer">
+          <div class="product-price"><span class="currency">$</span>24.99</div>
+          <button class="btn-add" data-product="ledstrip" data-price="24.99">Add to cart</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="features-section" id="features">
+  <div class="section">
+    <div class="features-grid">
+      <div class="feature-item">
+        <div class="feature-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        </div>
+        <h4>Free shipping</h4>
+        <p>On all orders over $50. Standard delivery in 2-5 business days across the US.</p>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        </div>
+        <h4>30-day returns</h4>
+        <p>Changed your mind? Return any item in original packaging for a full refund.</p>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <h4>2-year warranty</h4>
+        <p>Every product backed by a full manufacturer warranty. We handle all claims.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" id="contact">
+  <div class="section-header">
+    <h2>Get in touch</h2>
+    <p>Have a question about an order or product? We're here to help.</p>
+  </div>
+
+  <div class="contact-grid">
+    <div class="contact-info">
+      <h3>Contact details</h3>
+      <p>Our support team typically responds within a few hours during business days.</p>
+      <div class="contact-detail">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        support@techbyte.demo
+      </div>
+      <div class="contact-detail">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        (555) 123-4567
+      </div>
+      <div class="contact-detail">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Mon&ndash;Fri, 9 AM &ndash; 6 PM EST
+      </div>
+    </div>
+
+    <form class="contact-form" id="contact-form">
+      <div class="form-row">
+        <div class="field">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" placeholder="Your name" required />
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="you@example.com" required />
+        </div>
+      </div>
+      <div class="field">
+        <label for="subject">Subject</label>
+        <select id="subject" name="subject" required>
+          <option value="">Select a topic...</option>
+          <option value="order">Order issue</option>
+          <option value="product">Product question</option>
+          <option value="return">Return or refund</option>
+          <option value="other">Something else</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="message">Message</label>
+        <textarea id="message" name="message" placeholder="How can we help?" required></textarea>
+      </div>
+      <button type="submit" class="btn-submit">Send message</button>
+    </form>
+  </div>
+</div>
+
+<div class="section" id="faq">
+  <div class="section-header">
+    <h2>Frequently asked questions</h2>
+    <p>Quick answers to common questions.</p>
+  </div>
+
+  <div class="faq-list">
+    <details class="faq-item">
+      <summary>How long does shipping take?</summary>
+      <div class="faq-answer">Standard shipping takes 2-5 business days within the US. Express shipping is available for $9.99 and delivers in 1-2 business days. You'll receive a tracking number via email once your order ships.</div>
+    </details>
+    <details class="faq-item">
+      <summary>What is your return policy?</summary>
+      <div class="faq-answer">We accept returns within 30 days of delivery. Items must be in their original packaging and in unused condition. Refunds are processed within 5-7 business days after we receive the returned item.</div>
+    </details>
+    <details class="faq-item">
+      <summary>Do you ship internationally?</summary>
+      <div class="faq-answer">We currently ship to the US, Canada, and EU countries. International shipping rates vary by destination and are calculated at checkout. Duties and taxes may apply depending on your location.</div>
+    </details>
+    <details class="faq-item">
+      <summary>How do I track my order?</summary>
+      <div class="faq-answer">Once your order ships, you'll receive an email with a tracking number and a link to the carrier's tracking page. You can also check order status from the account section on our website.</div>
+    </details>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <p>&copy; 2026 TechByte Store &mdash; Demo site for <a href="https://github.com/webclaw" target="_blank" rel="noopener">WebClaw</a></p>
+</footer>
+
+<div class="toast-msg" id="toast"></div>
+
+<script>
+  // Cart
+  let cart = [];
+  const cartBtn = document.getElementById('cart-btn');
+
+  document.querySelectorAll('.btn-add').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const product = btn.dataset.product;
+      const price = parseFloat(btn.dataset.price);
+      cart.push({ product, price });
+      cartBtn.textContent = `Cart (${cart.length})`;
+      btn.textContent = 'Added';
+      btn.classList.add('added');
+      showToast(`${product.charAt(0).toUpperCase() + product.slice(1)} added to cart`);
+      setTimeout(() => {
+        btn.textContent = 'Add to cart';
+        btn.classList.remove('added');
+      }, 2000);
+    });
+  });
+
+  // Contact form
+  document.getElementById('contact-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    showToast('Message sent — we\'ll get back to you soon.');
+    e.target.reset();
+  });
+
+  // Toast
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('visible');
+    setTimeout(() => toast.classList.remove('visible'), 2500);
+  }
+</script>
+
+<!-- WebClaw Integration -->
+<script src="../embed/dist/webclaw.js"
+        data-site-id="demo"
+        data-gateway="http://localhost:8081"
+        data-position="bottom-right"
+        data-color="#0f172a"
+        data-seamless="true">
+</script>
+
+</body>
+</html>

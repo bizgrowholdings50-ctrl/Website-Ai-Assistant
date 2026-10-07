@@ -1,0 +1,13 @@
+{
+  "name": "WebClaw",
+  "short_name": "WebClaw",
+  "description": "Personal Live Agent for Website Operations and Support",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0A0A0F",
+  "theme_color": "#FF4D4D",
+  "icons": [
+    { "src": "/static/img/favicon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/static/img/favicon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

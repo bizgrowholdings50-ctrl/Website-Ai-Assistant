@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant User as User
+    participant Ext as Chrome Extension
+    participant Any as Any Website
+    participant GW as Gateway
+    participant Gemini as Gemini Live API
+
+    User->>Ext: Install extension, configure gateway
+    Ext->>Ext: Persistent mic permission granted
+
+    User->>Any: Navigates to any website
+    Ext->>Ext: Capture interactive elements
+    User->>Ext: "Find the return policy"
+    Ext->>GW: WebSocket + page snapshot
+    GW->>Gemini: Audio + context
+    Gemini->>GW: Response + scroll_to action
+    GW->>Ext: Audio + DOM action
+    Ext->>Any: Scroll to FAQ section
+    Ext->>Any: Highlight "Return Policy"
+    Ext->>User: Voice: "Here it is. Returns<br/>accepted within 30 days."

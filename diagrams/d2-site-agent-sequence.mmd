@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant Owner as Site Owner
+    participant Site as Website
+    participant User as Visitor
+    participant Embed as WebClaw Embed
+    participant GW as Gateway
+    participant Gemini as Gemini Live API
+
+    Owner->>Site: Add script tag + site_id
+    Owner->>GW: Configure knowledge base,<br/>persona, permissions
+
+    User->>Site: Visits website
+    Site->>Embed: Embed script loads (19KB)
+    Embed->>Embed: Create Shadow DOM overlay
+    Embed->>Embed: Capture DOM snapshot
+
+    User->>Embed: Clicks avatar or speaks
+    Embed->>GW: WebSocket connect + DOM snapshot
+    GW->>GW: Load site config + knowledge base
+    GW->>Gemini: Open bidi audio stream
+
+    User->>Embed: "Help me check out"
+    Embed->>GW: Audio stream (PCM 16kHz)
+    GW->>Gemini: Forward audio
+    Gemini->>GW: Audio response + tool calls
+    GW->>Embed: Audio (PCM 24kHz) + DOM actions
+    Embed->>Site: Execute: click "Add to Cart"
+    Embed->>User: Voice: "I've added it to your cart.<br/>Ready to check out?"

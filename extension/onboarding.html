@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to WebClaw</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #FF4D4D;
+      --primary-light: #FF7A7A;
+      --primary-dark: #CC2A2A;
+      --primary-deep: #991B1B;
+      --teal: #00E5CC;
+      --teal-dark: #00B8A3;
+      --orange: #FF6B35;
+      --bg-dark: #0A0A0F;
+      --surface: #13131A;
+      --surface-elevated: #1A1A24;
+      --border: #2A2A3A;
+      --text: #F0F0F5;
+      --text-muted: #8B8BA3;
+      --success: #00E676;
+      --warning: #FFB800;
+      --danger: #FF4757;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 48px 24px 32px;
+      background: linear-gradient(180deg, var(--surface) 0%, var(--bg-dark) 100%);
+    }
+
+    .header .logo {
+      width: 80px; height: 80px;
+      margin: 0 auto 16px;
+    }
+
+    .header .logo canvas {
+      border-radius: 16px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--orange) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header p {
+      color: var(--text-muted);
+      font-size: 15px;
+      max-width: 480px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+
+    /* Steps */
+    .steps-container {
+      flex: 1;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 0 24px 48px;
+      width: 100%;
+    }
+
+    .step-nav {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 32px;
+    }
+
+    .step-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--border);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .step-dot.active {
+      background: var(--primary);
+      width: 28px;
+      border-radius: 5px;
+    }
+
+    .step-dot.completed {
+      background: var(--success);
+    }
+
+    .step {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .step.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .step h2 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .step .subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .card h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card h3 .icon {
+      width: 20px; height: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+
+    /* Mic Test */
+    .mic-test-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 24px 0;
+    }
+
+    .mic-visualizer {
+      width: 200px; height: 60px;
+      background: var(--surface-elevated);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .mic-visualizer canvas {
+      width: 100%; height: 100%;
+    }
+
+    .mic-status {
+      font-size: 13px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mic-status .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+    }
+
+    .mic-status .dot.active {
+      background: var(--success);
+      animation: pulse 1.5s infinite;
+    }
+
+    .mic-status .dot.error {
+      background: var(--danger);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .mic-btn {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      border: 3px solid var(--primary);
+      background: transparent;
+      color: var(--primary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      font-size: 24px;
+    }
+
+    .mic-btn:hover {
+      background: rgba(255, 77, 77, 0.1);
+    }
+
+    .mic-btn.recording {
+      background: var(--primary);
+      color: white;
+      animation: pulse-ring 1.5s infinite;
+    }
+
+    @keyframes pulse-ring {
+      0% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.4); }
+      70% { box-shadow: 0 0 0 16px rgba(255, 77, 77, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0); }
+    }
+
+    .playback-btn {
+      padding: 8px 20px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-elevated);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .playback-btn:hover {
+      border-color: var(--teal);
+      color: var(--teal);
+    }
+
+    .playback-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* Select / Input */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .form-group select,
+    .form-group input {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-group select:focus,
+    .form-group input:focus {
+      border-color: var(--primary);
+    }
+
+    .form-group .hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Tabs for gateway config */
+    .config-tabs {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 16px;
+      background: var(--surface-elevated);
+      border-radius: 8px;
+      padding: 3px;
+    }
+
+    .config-tab {
+      flex: 1;
+      padding: 8px 16px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .config-tab.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    .config-panel { display: none; }
+    .config-panel.active { display: block; }
+
+    /* Import section */
+    .import-list {
+      list-style: none;
+    }
+
+    .import-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+
+    .import-list li:last-child { border-bottom: none; }
+
+    .import-list .import-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .import-list .import-icon {
+      width: 32px; height: 32px;
+      background: var(--surface-elevated);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .import-list .import-name {
+      font-weight: 500;
+    }
+
+    .import-list .import-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .import-btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--teal);
+      background: transparent;
+      color: var(--teal);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .import-btn:hover {
+      background: var(--teal);
+      color: var(--bg-dark);
+    }
+
+    .import-btn.imported {
+      border-color: var(--success);
+      color: var(--success);
+      cursor: default;
+    }
+
+    /* Empty state for import */
+    .empty-state {
+      text-align: center;
+      padding: 32px 16px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .empty-state .empty-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    /* Navigation */
+    .nav-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 32px;
+    }
+
+    .btn {
+      padding: 12px 28px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-light);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--surface-elevated);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--text-muted);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+    }
+
+    .btn-ghost:hover {
+      color: var(--text);
+    }
+
+    .btn-success {
+      background: var(--teal);
+      color: var(--bg-dark);
+    }
+
+    .btn-success:hover {
+      background: var(--teal-dark);
+    }
+
+    /* Toggle */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .toggle-row .label-group {
+      flex: 1;
+    }
+
+    .toggle-row label {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .toggle-row .desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .toggle {
+      position: relative;
+      width: 44px; height: 24px;
+      flex-shrink: 0;
+    }
+
+    .toggle input { opacity: 0; width: 0; height: 0; }
+
+    .toggle .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: var(--border);
+      border-radius: 24px;
+      transition: 0.2s;
+    }
+
+    .toggle .slider:before {
+      content: '';
+      position: absolute;
+      height: 18px; width: 18px;
+      left: 3px; bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.2s;
+    }
+
+    .toggle input:checked + .slider { background: var(--primary); }
+    .toggle input:checked + .slider:before { transform: translateX(20px); }
+
+    /* API key input */
+    .api-key-input {
+      position: relative;
+    }
+
+    .api-key-input input {
+      padding-right: 40px;
+    }
+
+    .api-key-toggle {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    /* Finish screen */
+    .finish-screen {
+      text-align: center;
+      padding: 32px 0;
+    }
+
+    .finish-screen .checkmark {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--orange) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 40px;
+    }
+
+    .finish-screen h2 {
+      font-size: 24px;
+      margin-bottom: 12px;
+    }
+
+    .finish-screen p {
+      color: var(--text-muted);
+      font-size: 14px;
+      max-width: 400px;
+      margin: 0 auto 32px;
+      line-height: 1.6;
+    }
+
+    .finish-tips {
+      text-align: left;
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 24px;
+    }
+
+    .finish-tips h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .finish-tips .tip {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .finish-tips .tip .tip-icon {
+      flex-shrink: 0;
+      width: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo">
+      <canvas id="header-avatar" width="80" height="80"></canvas>
+    </div>
+    <h1>Welcome to WebClaw</h1>
+    <p>Your personal AI agent that works on any website. Let's get you set up in just a few steps.</p>
+  </div>
+
+  <div class="steps-container">
+    <div class="step-nav" id="step-nav">
+      <div class="step-dot active" data-step="0"></div>
+      <div class="step-dot" data-step="1"></div>
+      <div class="step-dot" data-step="2"></div>
+      <div class="step-dot" data-step="3"></div>
+    </div>
+
+    <!-- Step 1: Microphone Setup -->
+    <div class="step active" id="step-0">
+      <h2>Microphone Setup</h2>
+      <p class="subtitle">WebClaw uses seamless voice — just speak naturally, no buttons needed. Let's make sure your mic is working.</p>
+
+      <div class="card">
+        <h3><span class="icon">🎙️</span> Select Microphone</h3>
+        <div class="form-group">
+          <select id="mic-select">
+            <option value="">Loading microphones...</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="icon">🔊</span> Test Your Voice</h3>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+          Click the mic button and say something. You'll see the waveform react, then play it back to check quality.
+        </p>
+        <div class="mic-test-area">
+          <div class="mic-status" id="mic-status">
+            <span class="dot" id="mic-dot"></span>
+            <span id="mic-status-text">Click to start recording</span>
+          </div>
+          <div class="mic-visualizer">
+            <canvas id="mic-viz" width="400" height="120"></canvas>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;">
+            <button class="mic-btn" id="mic-test-btn" title="Record">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+              </svg>
+            </button>
+            <button class="playback-btn" id="playback-btn" disabled title="Play back recording">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+              Play Back
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="toggle-row">
+          <div class="label-group">
+            <label>Seamless Voice Mode</label>
+            <div class="desc">Always listening — just start talking, no push-to-talk needed</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="seamless-toggle" checked />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="nav-row">
+        <div></div>
+        <button class="btn btn-primary" data-action="next">Continue</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Import from OpenClaw -->
+    <div class="step" id="step-1">
+      <h2>Import from OpenClaw</h2>
+      <p class="subtitle">Point to your OpenClaw workspace folder. We'll read your soul, skills, memory, and agent configs directly.</p>
+
+      <div class="card">
+        <h3><span class="icon">📂</span> OpenClaw Workspace</h3>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+          Select your OpenClaw directory. We'll scan for workspace files like SOUL.md, SKILLS.md, MEMORY.md, etc.
+        </p>
+        <button class="btn btn-secondary" id="pick-directory-btn" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+          Select OpenClaw Folder...
+        </button>
+        <div id="folder-status" style="margin-top:8px;display:none;">
+          <p id="folder-path" style="font-size:13px;color:var(--teal);display:flex;align-items:center;gap:6px;"></p>
+        </div>
+      </div>
+
+      <div class="card" id="import-results-card" style="display:none;">
+        <h3><span class="icon">📦</span> Workspace Files</h3>
+        <div id="import-list-container"></div>
+        <button class="btn btn-primary" id="import-all-btn" style="width:100%;margin-top:12px;">Import All</button>
+      </div>
+
+      <div class="card">
+        <h3><span class="icon">🌐</span> OpenClaw Gateway</h3>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+          If you run an OpenClaw gateway, connect it here so your personal claw can relay tasks back to it.
+        </p>
+        <div class="form-group">
+          <label>OpenClaw Gateway URL</label>
+          <input type="url" id="openclaw-gateway-url" placeholder="http://localhost:3000 or https://your-claw.openclaw.dev" />
+          <p class="hint">Leave blank if you don't have one.</p>
+        </div>
+        <button class="btn btn-secondary" id="test-openclaw-btn" style="width:100%;">Test Connection</button>
+        <p id="openclaw-test-result" style="font-size:13px;margin-top:8px;display:none;"></p>
+      </div>
+
+      <div class="nav-row">
+        <button class="btn btn-ghost" data-action="prev">Back</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost" data-action="next">Skip</button>
+          <button class="btn btn-primary" data-action="next">Continue</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Gateway / Model Setup -->
+    <div class="step" id="step-2">
+      <h2>Agent Configuration</h2>
+      <p class="subtitle">Connect to a WebClaw Gateway or bring your own model API key to run your own Instance.</p>
+
+      <div class="config-tabs">
+        <button class="config-tab active" data-config-tab="gateway">WebClaw Gateway</button>
+        <button class="config-tab" data-config-tab="byok">Bring Your Own Key</button>
+      </div>
+
+      <div class="config-panel active" id="panel-gateway">
+        <div class="card">
+          <h3><span class="icon">🌐</span> Gateway Connection</h3>
+          <div class="form-group">
+            <label>Gateway URL</label>
+            <input type="url" id="gateway-url" placeholder="https://gateway.webclaw.dev" value="http://localhost:8080" />
+            <p class="hint">The WebClaw gateway server that proxies to Gemini Live API</p>
+          </div>
+          <div class="form-group">
+            <label>API Key (optional)</label>
+            <div class="api-key-input">
+              <input type="password" id="gateway-api-key" placeholder="wc_..." />
+              <button class="api-key-toggle" data-toggle-key="gateway-api-key">👁</button>
+            </div>
+            <p class="hint">Required for hosted gateways. Leave blank for local dev.</p>
+          </div>
+          <button class="btn btn-secondary" id="test-gateway-btn" style="width:100%;">Test Connection</button>
+          <p id="gateway-test-result" style="font-size:13px;margin-top:8px;display:none;"></p>
+        </div>
+      </div>
+
+      <div class="config-panel" id="panel-byok">
+        <div class="card">
+          <h3><span class="icon">🔑</span> Model API Key</h3>
+          <div class="form-group">
+            <label>Provider</label>
+            <select id="byok-provider">
+              <option value="gemini">Google Gemini</option>
+              <option value="openai">OpenAI</option>
+              <option value="anthropic">Anthropic Claude</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>API Key</label>
+            <div class="api-key-input">
+              <input type="password" id="byok-api-key" placeholder="Enter your API key..." />
+              <button class="api-key-toggle" data-toggle-key="byok-api-key">👁</button>
+            </div>
+            <p class="hint">Your key is stored locally and never sent to our servers.</p>
+          </div>
+          <div class="form-group">
+            <label>Model</label>
+            <select id="byok-model">
+              <option value="gemini-2.5-flash-native-audio-preview-12-2025">Gemini 2.5 Flash Native Audio</option>
+              <option value="gemini-2.5-flash-native-audio-latest">Gemini 2.5 Flash Native Audio (Latest)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="toggle-row">
+          <div class="label-group">
+            <label>Auto-activate on pages</label>
+            <div class="desc">Automatically connect WebClaw when you visit any website</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="auto-activate" />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="toggle-row" style="margin-bottom:0;">
+          <div class="label-group">
+            <label>Send page context</label>
+            <div class="desc">Share DOM structure with the agent for better assistance</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="send-dom" checked />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="nav-row">
+        <button class="btn btn-ghost" data-action="prev">Back</button>
+        <button class="btn btn-primary" data-action="next">Continue</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Finish -->
+    <div class="step" id="step-3">
+      <div class="finish-screen">
+        <div class="checkmark">🦀</div>
+        <h2>You're All Set!</h2>
+        <p>WebClaw is ready to help you on any website. Just start talking — your agent is always listening.</p>
+
+        <button class="btn btn-success" id="finish-btn" style="padding:14px 40px;font-size:16px;">
+          Start Using WebClaw
+        </button>
+
+        <div class="finish-tips">
+          <h3>Quick Tips</h3>
+          <div class="tip">
+            <span class="tip-icon">🗣️</span>
+            <span>Just speak naturally — WebClaw detects your voice automatically. No buttons needed.</span>
+          </div>
+          <div class="tip">
+            <span class="tip-icon">🔄</span>
+            <span>On any website, the site's configured agent loads first. Click the toggle or say "switch to my agent" to use your personal claw.</span>
+          </div>
+          <div class="tip">
+            <span class="tip-icon">🎨</span>
+            <span>Customize your avatar's appearance in the extension popup under "Avatar Design".</span>
+          </div>
+          <div class="tip">
+            <span class="tip-icon">⌨️</span>
+            <span>Use the keyboard shortcut (configurable in chrome://extensions/shortcuts) to toggle WebClaw on any page.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-row">
+        <button class="btn btn-ghost" data-action="prev">Back</button>
+        <div></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="onboarding.js"></script>
+</body>
+</html>
